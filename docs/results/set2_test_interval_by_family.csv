@@ -1,0 +1,15 @@
+family,n,coverage_edited,width_median
+compound_het,6.0,1.0,1.0
+hdr_graded,28.0,0.893,12.4
+hdr_with_indel,11.0,0.909,13.7
+hom_or_het_small_indel,39.0,0.974,11.0
+large_deletion,11.0,1.0,12.5
+low_fraction_indel,9.0,1.0,4.5
+mixed_alleles,8.0,1.0,28.25
+noisy,22.0,1.0,62.95
+partial_conversion,12.0,0.75,10.5
+pool,6.0,1.0,10.45
+two_cut_graded,21.0,1.0,6.5
+two_cut_junction_shift,6.0,1.0,5.75
+two_cut_plus_indel,6.0,1.0,5.25
+wt,21.0,1.0,3.5

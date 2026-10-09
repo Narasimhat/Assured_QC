@@ -1,0 +1,26 @@
+{
+  "name": "assured-qc",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "In-browser Sanger-trace QC for CRISPR knockouts, deletions, SNP corrections and knock-ins",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:gh-pages": "GITHUB_PAGES=1 vite build",
+    "preview": "vite preview",
+    "test": "node --test test/*.test.js",
+    "cli": "node cli/assured-qc.mjs"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.0.3"
+  },
+  "bin": {
+    "assured-qc": "cli/assured-qc.mjs"
+  }
+}

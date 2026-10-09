@@ -1,0 +1,5 @@
+tool,n,coverage,MAE_edited_analysed,MAE_edited_all_imputed,MAE_edited_ci_lo,MAE_edited_ci_hi,median_abs_err,p95_abs_err,FP_rate_WT,seconds_median,MAE_band_0,"MAE_band_(0,5]","MAE_band_(5,25]","MAE_band_(25,75]","MAE_band_(75,100]",MAE_intended,false_intended_rate_partial,MAE_ko,allele_recovery,allele_recovery_large_del
+assured_qc,191,0.995,2.188,2.438,1.539,3.025,0.7,7.87,0.095,0.759,0.576,0.945,2.95,3.424,1.179,3.136,0.0,0.7,0.993,0.9
+ice,191,0.995,5.735,5.967,3.983,7.749,2.0,32.85,0.0,10.9,0.095,2.65,3.429,6.316,9.806,5.157,1.0,3.638,0.921,0.3
+peaksplit,191,0.99,7.365,7.812,6.101,8.642,4.56,24.91,0.857,0.52,4.64,3.593,7.708,7.72,9.331,6.255,1.0,5.134,0.885,0.8
+traceedit,191,0.974,3.093,4.321,2.279,4.068,1.31,12.212,0.238,0.27,1.573,1.259,4.021,5.11,1.242,3.557,0.0,7.623,0.914,0.3

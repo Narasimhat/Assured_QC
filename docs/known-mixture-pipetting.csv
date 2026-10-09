@@ -1,0 +1,75 @@
+mix_id,series,composition,volumes_uL
+MX001,A,WT 100%,WT 10 nM stock 50 uL
+MX002,A,L12 cl6 2%; WT 98%,L12 cl6 10% intermediate 10 uL; WT 10 nM stock 40 uL
+MX003,A,L12 cl6 5%; WT 95%,L12 cl6 10% intermediate 25 uL; WT 10 nM stock 25 uL
+MX004,A,L12 cl6 10%; WT 90%,L12 cl6 10 nM stock 5 uL; WT 10 nM stock 45 uL
+MX005,A,L12 cl6 25%; WT 75%,L12 cl6 10 nM stock 12.5 uL; WT 10 nM stock 37.5 uL
+MX006,A,L12 cl6 50%; WT 50%,L12 cl6 10 nM stock 25 uL; WT 10 nM stock 25 uL
+MX007,A,L12 cl6 75%; WT 25%,L12 cl6 10 nM stock 37.5 uL; WT 10 nM stock 12.5 uL
+MX008,A,L12 cl6 100%,L12 cl6 10 nM stock 50 uL
+MX009,A,WT 100%,WT 10 nM stock 50 uL
+MX010,A,L12 cl6 2%; WT 98%,L12 cl6 10% intermediate 10 uL; WT 10 nM stock 40 uL
+MX011,A,L12 cl6 5%; WT 95%,L12 cl6 10% intermediate 25 uL; WT 10 nM stock 25 uL
+MX012,A,L12 cl6 10%; WT 90%,L12 cl6 10 nM stock 5 uL; WT 10 nM stock 45 uL
+MX013,A,L12 cl6 25%; WT 75%,L12 cl6 10 nM stock 12.5 uL; WT 10 nM stock 37.5 uL
+MX014,A,L12 cl6 50%; WT 50%,L12 cl6 10 nM stock 25 uL; WT 10 nM stock 25 uL
+MX015,A,L12 cl6 75%; WT 25%,L12 cl6 10 nM stock 37.5 uL; WT 10 nM stock 12.5 uL
+MX016,A,L12 cl6 100%,L12 cl6 10 nM stock 50 uL
+MX017,B,L12 cl6 50%; L12 cl4 50%,L12 cl6 10 nM stock 25 uL; L12 cl4 10 nM stock 25 uL
+MX018,B,L12 cl6 25%; L12 cl4 25%; WT 50%,L12 cl6 10 nM stock 12.5 uL; L12 cl4 10 nM stock 12.5 uL; WT 10 nM stock 25 uL
+MX019,B,L12 cl6 45%; L12 cl4 5%; WT 50%,L12 cl6 10 nM stock 22.5 uL; L12 cl4 10% intermediate 25 uL; WT 10 nM stock 2.5 uL
+MX020,B,L12 cl6 50%; L12 cl4 50%,L12 cl6 10 nM stock 25 uL; L12 cl4 10 nM stock 25 uL
+MX021,B,L12 cl6 25%; L12 cl4 25%; WT 50%,L12 cl6 10 nM stock 12.5 uL; L12 cl4 10 nM stock 12.5 uL; WT 10 nM stock 25 uL
+MX022,B,L12 cl6 45%; L12 cl4 5%; WT 50%,L12 cl6 10 nM stock 22.5 uL; L12 cl4 10% intermediate 25 uL; WT 10 nM stock 2.5 uL
+MX023,C,WT 100%,WT 10 nM stock 50 uL
+MX024,C,L07 H1.585 2%; WT 98%,L07 H1.585 10% intermediate 10 uL; WT 10 nM stock 40 uL
+MX025,C,L07 H1.585 5%; WT 95%,L07 H1.585 10% intermediate 25 uL; WT 10 nM stock 25 uL
+MX026,C,L07 H1.585 10%; WT 90%,L07 H1.585 10 nM stock 5 uL; WT 10 nM stock 45 uL
+MX027,C,L07 H1.585 25%; WT 75%,L07 H1.585 10 nM stock 12.5 uL; WT 10 nM stock 37.5 uL
+MX028,C,L07 H1.585 50%; WT 50%,L07 H1.585 10 nM stock 25 uL; WT 10 nM stock 25 uL
+MX029,C,L07 H1.585 75%; WT 25%,L07 H1.585 10 nM stock 37.5 uL; WT 10 nM stock 12.5 uL
+MX030,C,L07 H1.585 100%,L07 H1.585 10 nM stock 50 uL
+MX031,C,WT 100%,WT 10 nM stock 50 uL
+MX032,C,L07 H1.585 2%; WT 98%,L07 H1.585 10% intermediate 10 uL; WT 10 nM stock 40 uL
+MX033,C,L07 H1.585 5%; WT 95%,L07 H1.585 10% intermediate 25 uL; WT 10 nM stock 25 uL
+MX034,C,L07 H1.585 10%; WT 90%,L07 H1.585 10 nM stock 5 uL; WT 10 nM stock 45 uL
+MX035,C,L07 H1.585 25%; WT 75%,L07 H1.585 10 nM stock 12.5 uL; WT 10 nM stock 37.5 uL
+MX036,C,L07 H1.585 50%; WT 50%,L07 H1.585 10 nM stock 25 uL; WT 10 nM stock 25 uL
+MX037,C,L07 H1.585 75%; WT 25%,L07 H1.585 10 nM stock 37.5 uL; WT 10 nM stock 12.5 uL
+MX038,C,L07 H1.585 100%,L07 H1.585 10 nM stock 50 uL
+MX039,D,WT 100%,WT 10 nM stock 50 uL
+MX040,D,L08_5.744 5%; WT 95%,L08_5.744 10% intermediate 25 uL; WT 10 nM stock 25 uL
+MX041,D,L08_5.744 10%; WT 90%,L08_5.744 10 nM stock 5 uL; WT 10 nM stock 45 uL
+MX042,D,L08_5.744 25%; WT 75%,L08_5.744 10 nM stock 12.5 uL; WT 10 nM stock 37.5 uL
+MX043,D,L08_5.744 50%; WT 50%,L08_5.744 10 nM stock 25 uL; WT 10 nM stock 25 uL
+MX044,D,L08_5.744 100%,L08_5.744 10 nM stock 50 uL
+MX045,D,WT 100%,WT 10 nM stock 50 uL
+MX046,D,L08_5.744 5%; WT 95%,L08_5.744 10% intermediate 25 uL; WT 10 nM stock 25 uL
+MX047,D,L08_5.744 10%; WT 90%,L08_5.744 10 nM stock 5 uL; WT 10 nM stock 45 uL
+MX048,D,L08_5.744 25%; WT 75%,L08_5.744 10 nM stock 12.5 uL; WT 10 nM stock 37.5 uL
+MX049,D,L08_5.744 50%; WT 50%,L08_5.744 10 nM stock 25 uL; WT 10 nM stock 25 uL
+MX050,D,L08_5.744 100%,L08_5.744 10 nM stock 50 uL
+MX051,E,WT 100%,WT 10 nM stock 50 uL
+MX052,E,L09 Ex20 CI10 10%; WT 90%,L09 Ex20 CI10 10 nM stock 5 uL; WT 10 nM stock 45 uL
+MX053,E,L09 Ex20 CI10 25%; WT 75%,L09 Ex20 CI10 10 nM stock 12.5 uL; WT 10 nM stock 37.5 uL
+MX054,E,L09 Ex20 CI10 50%; WT 50%,L09 Ex20 CI10 10 nM stock 25 uL; WT 10 nM stock 25 uL
+MX055,E,L09 Ex20 CI10 100%,L09 Ex20 CI10 10 nM stock 50 uL
+MX056,E,WT 100%,WT 10 nM stock 50 uL
+MX057,E,L09 Ex20 CI10 10%; WT 90%,L09 Ex20 CI10 10 nM stock 5 uL; WT 10 nM stock 45 uL
+MX058,E,L09 Ex20 CI10 25%; WT 75%,L09 Ex20 CI10 10 nM stock 12.5 uL; WT 10 nM stock 37.5 uL
+MX059,E,L09 Ex20 CI10 50%; WT 50%,L09 Ex20 CI10 10 nM stock 25 uL; WT 10 nM stock 25 uL
+MX060,E,L09 Ex20 CI10 100%,L09 Ex20 CI10 10 nM stock 50 uL
+MX061,F1,L03_5.1 (-1) 2%; WT 98%,L03_5.1 (-1) 10% intermediate 10 uL; WT 10 nM stock 40 uL
+MX062,F1,L03_5.1 (-1) 5%; WT 95%,L03_5.1 (-1) 10% intermediate 25 uL; WT 10 nM stock 25 uL
+MX063,F1,L03_5.1 (-1) 10%; WT 90%,L03_5.1 (-1) 10 nM stock 5 uL; WT 10 nM stock 45 uL
+MX064,F1,L03_5.1 (-1) 25%; WT 75%,L03_5.1 (-1) 10 nM stock 12.5 uL; WT 10 nM stock 37.5 uL
+MX065,F1,L03_5.1 (-1) 50%; WT 50%,L03_5.1 (-1) 10 nM stock 25 uL; WT 10 nM stock 25 uL
+MX066,F2,L03_9.1 (+1 A) 2%; WT 98%,L03_9.1 (+1 A) 10% intermediate 10 uL; WT 10 nM stock 40 uL
+MX067,F2,L03_9.1 (+1 A) 5%; WT 95%,L03_9.1 (+1 A) 10% intermediate 25 uL; WT 10 nM stock 25 uL
+MX068,F2,L03_9.1 (+1 A) 10%; WT 90%,L03_9.1 (+1 A) 10 nM stock 5 uL; WT 10 nM stock 45 uL
+MX069,F2,L03_9.1 (+1 A) 25%; WT 75%,L03_9.1 (+1 A) 10 nM stock 12.5 uL; WT 10 nM stock 37.5 uL
+MX070,F2,L03_9.1 (+1 A) 50%; WT 50%,L03_9.1 (+1 A) 10 nM stock 25 uL; WT 10 nM stock 25 uL
+MX071,WT,WT 100%,WT 10 nM stock 50 uL
+MX072,WT,WT 100%,WT 10 nM stock 50 uL
+MX073,WT,WT 100%,WT 10 nM stock 50 uL
+MX074,WT,WT 100%,WT 10 nM stock 50 uL

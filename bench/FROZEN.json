@@ -1,0 +1,21 @@
+{
+ "frozen_at": "2026-10-09T10:52:56",
+ "files": {
+  "bench/score.py": "e50766ce93dae0c3aeea9dd9877f118149855000ff9cfd55622e234b9b1ebb24",
+  "bench/simulate.py": "a260e40634a66feafce6798d5d0e90465425ebbdc32e6616956963f808b8fd54",
+  "bench/simlib.py": "cb5a3ab37459e8d6d7b277201503f5bbe0992b27349f4e9919d864e71e4676fd",
+  "docs/scorecard.md": "bb24f238e5d439b1d48da23e7f90d197f146641f13e1e5cc7a06772e36817728",
+  "bench/adapters.py": "9232c724f8f3657c1d023c5bcb0c519e5e6cdf081bd7e46562368dd9dee9136b"
+ },
+ "jobs_set1_sha256": "c3554699f79366fd72b2e72e5f6afeccfa28b2fd9884a504a9115bc5b132b1b2",
+ "dev_projects": [
+  "L07_SNP_editing",
+  "L01_KO_SNP_editing",
+  "L02_KO_SNP_editing",
+  "L09_Exn20_SNP_editing",
+  "L04_KO_SNP_editing",
+  "L11_SNP_editing"
+ ],
+ "amendments": [],
+ "public_copy_note": "In this public copy the locus names in bench/score.py, this file and the docs are replaced by codes L01-L12 (L12 = a two-guide deletion clone set used only in the wet-lab protocol); the scoring logic is unchanged. The hashes under 'files' are those of the original files that produced the reported results."
+}

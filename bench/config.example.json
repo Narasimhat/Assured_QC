@@ -1,0 +1,8 @@
+{
+ "node": "node",
+ "ice_python": "/path/to/ice-env/bin/python",
+ "ice_dir": "/path/to/ice",
+ "peaksplit_dir": "/path/to/peaksplit",
+ "traceedit_dir": "/path/to/Assured_TraceEdit",
+ "assured_qc_dir": "/path/to/assured-qc"
+}

@@ -1,0 +1,4 @@
+comparator,n_common,mean_diff,ci_lo,ci_hi
+ice,190,3.548,1.982,5.67
+peaksplit,189,5.17,3.89,6.552
+traceedit,186,0.928,0.535,1.404

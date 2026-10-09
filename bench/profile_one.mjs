@@ -1,0 +1,21 @@
+
+import { readFileSync } from "node:fs";
+import { parseAbif } from "../src/abif.js";
+import { planDesign } from "../src/batch.js";
+import { prepareSample } from "../src/prepare.js";
+import { buildExpectedAlleles } from "../src/alleleLibrary.js";
+import { decompose } from "../src/decompose.js";
+import { proposeAlleles } from "../src/pursuit.js";
+const [jobsPath, idx] = process.argv.slice(2); const job = JSON.parse(readFileSync(jobsPath, "utf8"))[Number(idx)];
+const tr = (p) => { const b = readFileSync(p); return parseAbif(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength), p); };
+const control = tr(job.control), edited = tr(job.edited);
+const plan = planDesign({ designSpec: null, control, guides: job.guides.join(", "), donor: job.donor || "", gene: job.project });
+const T = (label, f) => { const t = performance.now(); const r = f(); console.log(label, (performance.now() - t).toFixed(0), "ms"); return r; };
+const prepared = T("prepare", () => prepareSample({ control, edited, spec: plan.spec, options: {} }));
+const { alleles } = T("library", () => buildExpectedAlleles(prepared.spec, {}));
+console.log("alleles", alleles.length, "window", prepared.window.end - prepared.window.start);
+const first = T("decompose", () => decompose({ prepared, alleles, options: { returnInternals: true } }));
+console.log("columns", first.columns);
+const extra = T("propose", () => proposeAlleles({ prepared, internals: first.internals, alleles, options: {} }));
+console.log("extra", extra.map((e) => e.label));
+if (extra.length) T("decompose2", () => decompose({ prepared, alleles: [...alleles, ...extra], options: {} }));

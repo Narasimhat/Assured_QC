@@ -1,0 +1,134 @@
+{
+ "schema": "assured-qc-design/1",
+ "design": {
+  "type": "ct",
+  "editKind": "tag_small",
+  "gene": "NR2F2",
+  "label": "C-terminal knock-in of 2xHA-only (96 bp)",
+  "tag": "2xHA-only",
+  "codingStrand": "+"
+ },
+ "reference": {
+  "sequence": "AGCAAACACTTCCTCAGGACCATCTCTTGCTCTTTCTTCCCCCACCCCGCCTCCCCCCCTTAAGTTTTCAGTACATAGACATTTGCTCCAACTCCGGTTGGGGCAGTTTGACAGAGCTCTGTGCACACACCTCATGTGACCCAATTCAAACCTCTTAATCTGATGACTGAATTCTTCTTCTTCTTCTTCTTCTTCTTTTTCTTCTTCTTCTTCTTCTGTTTTTAAACTTTCTTCCAGATGCCTGTGGTCTCTCTGATGTAGCCCATGTGGAAAGCTTGCAGGAAAAGTCTCAGTGTGCTTTGGAAGAATACGTTAGGAGCCAGTACCCCAACCAGCCGACGAGATTCGGAAAGCTTTTGCTTCGCCTCCCTTCCCTCCGCACCGTCTCCTCCTCAGTCATAGAGCAATTGTTTTTCGTCCGTTTGGTAGGTAAAACCCCCATCGAAACCCTCATCCGGGATATGTTACTGTCCGGCAGCAGTTTTAACTGGCCGTATATGGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAGAAAGAAAAGGCAAAAGACTGGTTTGTTTGCTTAATTTCCTTCTGTTAAGAAAGGATATAAAAGGATGTTACAAGTTTGCTAAAAGAAGAGAGGGGAAGAATTTAATGGACTGTGAATTTCAAAAAAAAAAAAAAAGACTGTCAAATGAACTTTTACAGAATGCATTAAAAAAAAAAAAAAACTCCTGTGTCGGTCAGAACAACTTGCTACTTATCATTTTTGTATAAAAAGGAAATTAGTCTTTTTCTTTTTTTGGTAAATTTTTGAAAAATATTGCTAAAAGTGCATTTAAGGAGATTGGGAGACAATTAGCAGAATGGAGAAAGTAAGTCTTTTTTTTTTCCAAATTATTAATTGTCCTGTGTCTATGTACCTCTAGCTGTTCTTTTTTGTACTTTTCTGGTTCCAAACCAGTTTATTCTGTGGTTCTATAATAAGTTTTGATATAATCTTGGCTTCTTAAAAACTGTGTATCATTAAAATATATGTTCTGCAAGAATTAAAACTGAG",
+  "offset": 16183,
+  "convention": "0-based index into sequence; the + strand of the uploaded reference"
+ },
+ "guides": [
+  {
+   "name": "NR2F2_gRNA1",
+   "spacer": "CAGTTTTAACTGGCCGTATA",
+   "pam": "TGG",
+   "strand": "+",
+   "cut": 495,
+   "protospacerStart": 478,
+   "protospacerEnd": 498,
+   "offsetFromEdit": -14,
+   "index": 1
+  },
+  {
+   "name": "NR2F2_gRNA2",
+   "spacer": "ATTTATTGAATTGCCATATA",
+   "pam": "CGG",
+   "strand": "-",
+   "cut": 497,
+   "protospacerStart": 494,
+   "protospacerEnd": 514,
+   "offsetFromEdit": -12,
+   "index": 2
+  }
+ ],
+ "donors": [
+  {
+   "name": "NR2F2_ct_donor",
+   "format": "ssodn",
+   "sequence": "GGATATGTTACTGTCCGGCAGCAGTTTTAACTGGCCCTACATGGCCATACAAGCAGCTAAAGCCAAAAACAACCAGGGATCCGGAGGCGGCTACCCCTACGACGTGCCCGACTACGCCGGCTATCCGTATGATGTCCCGGACTATTAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAGAAAGAAAAGGCAAAAGACT",
+   "refStart": 457,
+   "refEnd": 564,
+   "insertBp": 96,
+   "arm5": 52,
+   "arm3": 52,
+   "replacedBp": 3,
+   "insertStart": 509,
+   "guide": null,
+   "orderStrands": [
+    {
+     "strand": "antisense",
+     "guides": [
+      "NR2F2_2xHA_KI_gRNA1"
+     ]
+    },
+    {
+     "strand": "sense",
+     "guides": [
+      "NR2F2_2xHA_KI_gRNA2"
+     ]
+    }
+   ]
+  }
+ ],
+ "markers": [
+  {
+   "pos": 493,
+   "ref": "G",
+   "alt": "C",
+   "role": "blocking",
+   "guide": 1,
+   "label": "p.P409P",
+   "change": "CCG>CCC"
+  },
+  {
+   "pos": 496,
+   "ref": "T",
+   "alt": "C",
+   "role": "blocking",
+   "guide": 2,
+   "label": "p.Y410Y",
+   "change": "TAT>TAC"
+  },
+  {
+   "pos": 502,
+   "ref": "A",
+   "alt": "C",
+   "role": "blocking",
+   "guide": 2,
+   "label": "p.A412A",
+   "change": "GCA>GCC"
+  },
+  {
+   "pos": 505,
+   "ref": "T",
+   "alt": "A",
+   "role": "blocking",
+   "guide": 2,
+   "label": "p.I413I",
+   "change": "ATT>ATA"
+  }
+ ],
+ "primers": [
+  {
+   "name": "NR2F2_2xHA_KI_Fw",
+   "sequence": "TGGAAGAATACGTTAGGAGCC",
+   "start": 300,
+   "end": 321,
+   "strand": "+"
+  },
+  {
+   "name": "NR2F2_2xHA_KI_Rev",
+   "sequence": "GTAGCAAGTTGTTCTGACCG",
+   "start": 735,
+   "end": 755,
+   "strand": "-"
+  }
+ ],
+ "amplicons": [
+  {
+   "name": "NR2F2_2xHA_KI_Fw + NR2F2_2xHA_KI_Rev",
+   "forward": "NR2F2_2xHA_KI_Fw",
+   "reverse": "NR2F2_2xHA_KI_Rev",
+   "wtBp": 455,
+   "editedBp": {
+    "NR2F2_ct_donor": 548
+   }
+  }
+ ]
+}
