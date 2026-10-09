@@ -78,14 +78,14 @@ export default function QuickStart() {
       <h2>Quick start: drop your files</h2>
       <div className={`drop${dragging ? " over" : ""}`} onDragOver={(e) => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={(e) => { e.preventDefault(); setDragging(false); addFiles(e.dataTransfer.files); }}>
         <p><b>Drop the .ab1 files here</b> (controls and samples together, forward and reverse reads), plus, if you have them, the design (report .html or file .json) and a sample sheet (.csv).</p>
-        <input ref={filePicker} hidden type="file" multiple accept=".ab1,.abi,.csv,.tsv,.json,.html,.htm,text/html,application/json" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} aria-label="Choose files" />
+        <input ref={filePicker} hidden style={{ display: "none" }} type="file" multiple accept=".ab1,.abi,.csv,.tsv,.json,.html,.htm,text/html,application/json" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} aria-label="Choose files" />
         <p><button type="button" disabled={running} onClick={() => filePicker.current.click()}>Choose files (AB1, HTML, JSON or CSV)</button></p>
-        <input ref={folderPicker} hidden type="file" multiple webkitdirectory="" directory="" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} aria-label="Choose a folder" />
+        <input ref={folderPicker} hidden style={{ display: "none" }} type="file" multiple webkitdirectory="" directory="" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} aria-label="Choose a folder" />
         <p><button type="button" disabled={running} onClick={() => folderPicker.current.click()}>Choose a folder</button> <span className="muted">Imports supported files inside a folder. To select one HTML report, use Choose files or Choose design report.</span></p>
         <p className="muted">Nothing is uploaded: the files are read and analysed in this browser.</p>
       </div>
       <p className="field">Add or replace a design report (HTML or JSON)</p>
-      <input ref={designPicker} hidden id="q-design" aria-label="Design report file" type="file" accept=".html,.htm,.json,text/html,application/json" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
+      <input ref={designPicker} hidden style={{ display: "none" }} id="q-design" aria-label="Design report file" type="file" accept=".html,.htm,.json,text/html,application/json" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
       <p><button type="button" disabled={running} onClick={() => designPicker.current.click()}>Choose design report (HTML or JSON)</button> <span className="muted">{designName || "No design selected."}</span></p>
       {designName && <div role="status">
         <p>Design: <b>{designName}</b> <button type="button" disabled={running} onClick={() => { setDesignName(""); setDesignText(""); setDesignIndex(0); setOutcome(null); setError(""); }}>Remove design</button></p>
