@@ -14,6 +14,7 @@ const arrayBufferOf = (file) => file.arrayBuffer();
 const interval = (iv) => (iv ? `${iv[0]}-${iv[1]}%` : "");
 
 export default function QuickStart() {
+  const filePicker = useRef(null); const folderPicker = useRef(null); const designPicker = useRef(null);
   const files = useRef(new Map()); const buffers = useRef(new Map());
   const [traceNames, setTraceNames] = useState([]); const [sheetText, setSheetText] = useState(""); const [designText, setDesignText] = useState(""); const [designName, setDesignName] = useState("");
   const [guidesText, setGuidesText] = useState(""); const [donorText, setDonorText] = useState(""); const [nuclease, setNuclease] = useState("SpCas9"); const [typeOverride, setTypeOverride] = useState(""); const [goal, setGoal] = useState("homozygous");
@@ -77,12 +78,15 @@ export default function QuickStart() {
       <h2>Quick start: drop your files</h2>
       <div className={`drop${dragging ? " over" : ""}`} onDragOver={(e) => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={(e) => { e.preventDefault(); setDragging(false); addFiles(e.dataTransfer.files); }}>
         <p><b>Drop the .ab1 files here</b> (controls and samples together, forward and reverse reads), plus, if you have them, the design (report .html or file .json) and a sample sheet (.csv).</p>
-        <input type="file" multiple accept=".ab1,.abi,.csv,.tsv,.json,.html,.htm" onChange={(e) => addFiles(e.target.files)} aria-label="Choose files" />
-        <input type="file" multiple webkitdirectory="" directory="" onChange={(e) => addFiles(e.target.files)} aria-label="Choose a folder" />
+        <input ref={filePicker} hidden type="file" multiple accept=".ab1,.abi,.csv,.tsv,.json,.html,.htm,text/html,application/json" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} aria-label="Choose files" />
+        <p><button type="button" disabled={running} onClick={() => filePicker.current.click()}>Choose files (AB1, HTML, JSON or CSV)</button></p>
+        <input ref={folderPicker} hidden type="file" multiple webkitdirectory="" directory="" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} aria-label="Choose a folder" />
+        <p><button type="button" disabled={running} onClick={() => folderPicker.current.click()}>Choose a folder</button> <span className="muted">Imports supported files inside a folder. To select one HTML report, use Choose files or Choose design report.</span></p>
         <p className="muted">Nothing is uploaded: the files are read and analysed in this browser.</p>
       </div>
-      <label className="field" htmlFor="q-design">Add or replace a design report (HTML or JSON)</label>
-      <input id="q-design" type="file" accept=".html,.htm,.json,text/html,application/json" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
+      <p className="field">Add or replace a design report (HTML or JSON)</p>
+      <input ref={designPicker} hidden id="q-design" aria-label="Design report file" type="file" accept=".html,.htm,.json,text/html,application/json" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
+      <p><button type="button" disabled={running} onClick={() => designPicker.current.click()}>Choose design report (HTML or JSON)</button> <span className="muted">{designName || "No design selected."}</span></p>
       {designName && <div role="status">
         <p>Design: <b>{designName}</b> <button type="button" disabled={running} onClick={() => { setDesignName(""); setDesignText(""); setDesignIndex(0); setOutcome(null); setError(""); }}>Remove design</button></p>
         {design.error ? <p className="error">{design.error} Replace or remove this file to continue.</p> : design.kind === "report" ? <>
