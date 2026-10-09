@@ -4,7 +4,7 @@ Sanger-trace quality control for CRISPR edits in the browser: knockouts, deletio
 
 **Your files stay on your computer.** Traces are read and analysed inside the browser (in a web worker); nothing is uploaded and there is no server.
 
-Status: 0.2.0, preview. See "Accuracy and limits" before using results to accept or reject clones.
+Status: 0.3.0, preview (adds offset re-anchoring at the cut and an unplanned-base-change check; see docs/changes-0.3.0.md). See "Accuracy and limits" before using results to accept or reject clones.
 
 ## Workflows
 

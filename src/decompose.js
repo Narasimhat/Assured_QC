@@ -5,6 +5,7 @@
 // across the window cannot be told apart by this trace; they are merged into one column and reported together.
 
 import { nnlsGram } from "./nnls.js";
+import { shiftAt } from "./offset.js";
 
 // A trace gives the base mixture at each position, not which bases sit together on one allele, so very
 // different sets of partial alleles can explain the same marker fractions equally well (50% wild type + 50%
@@ -70,7 +71,7 @@ function buildBlock(prepared, reversed) {
   const a0 = readToRef[anchor] - (anchor - window.start);
   const obs = new Float64Array(len * 4); const use = new Uint8Array(len);
   for (let j = window.start; j < window.end; j += 1) {
-    const k = j + shift;
+    const k = j + shiftAt(prepared, j);
     if (k >= 0 && k < edited.calls.length && control.valid[j] && edited.valid[k]) { const i = j - window.start; use[i] = 1; for (let b = 0; b < 4; b += 1) obs[i * 4 + b] = edited.composition[k * 4 + b]; }
   }
   const cc = new Float64Array(len * 4); const cn = new Float64Array(len); const cs = new Float64Array(len);
