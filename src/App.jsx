@@ -92,6 +92,7 @@ export default function App() {
   return (
     <div className="page">
       <h1>Assured QC</h1>
+      <p><a href="https://assured-traceedit.vercel.app/unified.html">Open Assured Analysis: one project setup, AssuredQC + TraceEdit results</a></p>
       <p className="muted">Sanger-trace QC for CRISPR knockouts, deletions, SNP corrections and knock-ins. Files are read and analysed in your browser; nothing is uploaded.</p>
 
       <QuickStart />
