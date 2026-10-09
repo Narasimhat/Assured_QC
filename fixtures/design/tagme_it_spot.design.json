@@ -1,0 +1,146 @@
+{
+ "schema": "assured-qc-design/1",
+ "design": {
+  "type": "it",
+  "editKind": "internal_tag",
+  "gene": "TAGME",
+  "label": "Internal SPOT insertion after F50",
+  "tag": "SPOT",
+  "codingStrand": "+"
+ },
+ "reference": {
+  "sequence": "TCTGTCGCGGTGGGGGGAATGGTGATGGGTAGTCTTAGGTTGCAAGATCGCTCCGAGGTGATACCTCTCAGATACAGGTGGCTCCTACCCAGTGAGGGCAGTAAGCCTGAATATATTTTATTCCACAAAATCAGGAGTCATCGAAACAAGGCGAGAGGGACGTGGTTACCGGTCAACGTAATAATTAATCGGTGGTGGCGTAACGGAATCTGGCGAGATCAATGTTACCTAGCTCGCTAGGAAGAGCGGATGGGCGTTAGGACGCCAGGTGTCCAAATTTCGCTCTGTCTTGAGCTGCGACTCAAGGATGTTGTTTACTGCGCGTTCGTATTTACAGAGTCTATACGACGAACAACCCTATTCGGATAGCACGGCATGTATACAACGACCGCTACCAGCGACCATACAGCCGTAGAGTACTTATTGCTATACAAACTAATTAGATTCGGTACGAGAGTCAGAATGGGGTCTCTAAGCGTCAGATGCGCACCGCCTCATATAGTCAACTCCGAATACGGCACTTTTACAAGAACCTCCTGTATCCGTCTCCAGAGGCTTTCAAGTCAGATACCCTTCCGGGGCAGTGTCTCGGTATGCTACCTCGGCAGTAATGGGCCTCAAAGTACATCGAACTGGCTACCGCACTCGGATTCTTTGGCTTTCAAGAGTGGGCGGGCGGAGGCCCCTATGTACTTCACAGAGGGTACCGGGCCCTTGGCTCAGTTGCGTACAGAGAGTTTAGTCCGCATACTTCGCTTCCTCAATCGGCAGTTCGACGGCCCCAGAGCCCAGCTGGGTCCCGGTACCACCCGATTGTCGCGAGCTGGCGGGTACGCAAATGGCGCATGCCCTGGAAGCTGGGAAGTGGGACTACCAGCTCGCTTCCACTATCTTGTTTGCAGAGACGTTAAATCTTCCCTAGCCTCGTCACGTGGATACATCTATTATACTTCCTGGCTCGGTATGCTCCCGACCCACCGTTCCAATTGAAACATAAAGTGCTCTAAACTGCTAGAGCTGTGATCGCTGATGTCGGGATAGACGGCCGTATATCTCTTTAG",
+  "offset": 1125,
+  "convention": "0-based index into sequence; the + strand of the uploaded reference"
+ },
+ "guides": [
+  {
+   "name": "TAGME_gRNA1",
+   "spacer": "TCTTGTAAAAGTGCCGTATT",
+   "pam": "CGG",
+   "strand": "-",
+   "cut": 514,
+   "protospacerStart": 511,
+   "protospacerEnd": 531,
+   "offsetFromEdit": -11,
+   "index": 1
+  },
+  {
+   "name": "TAGME_gRNA2",
+   "spacer": "CCTCTGGAGACGGATACAGG",
+   "pam": "AGG",
+   "strand": "-",
+   "cut": 538,
+   "protospacerStart": 535,
+   "protospacerEnd": 555,
+   "offsetFromEdit": 13,
+   "index": 2
+  }
+ ],
+ "donors": [
+  {
+   "name": "ssODN1 (matched to TAGME_SPOT_KI_gRNA1)",
+   "format": "ssodn",
+   "sequence": "TTGCTATACAAACTAATTAGATTCGGTACGAGAGTCAGAATGGGGTCTCTAAGCGTCAGATGCGCACCGCCTCATATAGTCAACTCAGAGTACGGCACTTTTGACCGCGTGCGCGCCGTGAGCCATTGGAGCAGCACAAGAACCTCCTGTATCCGTCTCC",
+   "refStart": 423,
+   "refEnd": 550,
+   "insertBp": 33,
+   "arm5": 102,
+   "arm3": 25,
+   "replacedBp": 0,
+   "insertStart": 525,
+   "guide": 1,
+   "orderSequence": "TTGCTATACAAACTAATTAGATTCGGTACGAGAGTCAGAATGGGGTCTCTAAGCGTCAGATGCGCACCGCCTCATATAGTCAACTCAGAGTACGGCACTTTTGACCGCGTGCGCGCCGTGAGCCATTGGAGCAGCACAAGAACCTCCTGTATCCGTCTCC",
+   "orderStrand": "+ strand target",
+   "carriesMarkers": [
+    509,
+    512
+   ]
+  },
+  {
+   "name": "ssODN2 (matched to TAGME_SPOT_KI_gRNA2)",
+   "format": "ssodn",
+   "sequence": "GGTACGAGAGTCAGAATGGGGTCTCTAAGCGTCAGATGCGCACCGCCTCATATAGTCAACTCCGAATACGGCACTTTTGACCGCGTGCGCGCCGTGAGCCATTGGAGCAGCACAAGAACATCCTGCATCCGTCTCCAGAGGCTTTCAAGTCAGATACCCT",
+   "refStart": 447,
+   "refEnd": 574,
+   "insertBp": 33,
+   "arm5": 78,
+   "arm3": 49,
+   "replacedBp": 0,
+   "insertStart": 525,
+   "guide": 2,
+   "orderSequence": "GGTACGAGAGTCAGAATGGGGTCTCTAAGCGTCAGATGCGCACCGCCTCATATAGTCAACTCCGAATACGGCACTTTTGACCGCGTGCGCGCCGTGAGCCATTGGAGCAGCACAAGAACATCCTGCATCCGTCTCCAGAGGCTTTCAAGTCAGATACCCT",
+   "orderStrand": "+ strand target",
+   "carriesMarkers": [
+    533,
+    539
+   ]
+  }
+ ],
+ "markers": [
+  {
+   "pos": 509,
+   "ref": "C",
+   "alt": "A",
+   "role": "blocking",
+   "guide": 1,
+   "label": "p.S45S",
+   "change": "TCC>TCA"
+  },
+  {
+   "pos": 512,
+   "ref": "A",
+   "alt": "G",
+   "role": "blocking",
+   "guide": 1,
+   "label": "p.E46E",
+   "change": "GAA>GAG"
+  },
+  {
+   "pos": 533,
+   "ref": "C",
+   "alt": "A",
+   "role": "blocking",
+   "guide": 2,
+   "label": "p.T53T",
+   "change": "ACC>ACA"
+  },
+  {
+   "pos": 539,
+   "ref": "T",
+   "alt": "C",
+   "role": "blocking",
+   "guide": 2,
+   "label": "p.C55C",
+   "change": "TGT>TGC"
+  }
+ ],
+ "primers": [
+  {
+   "name": "TAGME_SPOT_KI_Fw",
+   "sequence": "CTCAAGGATGTTGTTTACTGCG",
+   "start": 300,
+   "end": 322,
+   "strand": "+"
+  },
+  {
+   "name": "TAGME_SPOT_KI_Rev",
+   "sequence": "AGGAAGCGAAGTATGCGG",
+   "start": 743,
+   "end": 761,
+   "strand": "-"
+  }
+ ],
+ "amplicons": [
+  {
+   "name": "TAGME_SPOT_KI_Fw + TAGME_SPOT_KI_Rev",
+   "forward": "TAGME_SPOT_KI_Fw",
+   "reverse": "TAGME_SPOT_KI_Rev",
+   "wtBp": 461,
+   "editedBp": {
+    "ssODN1 (matched to TAGME_SPOT_KI_gRNA1)": 494,
+    "ssODN2 (matched to TAGME_SPOT_KI_gRNA2)": 494
+   }
+  }
+ ]
+}
