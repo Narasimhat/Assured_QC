@@ -24,12 +24,21 @@ export default function QuickStart() {
   const [designIndex, setDesignIndex] = useState(0);
 
   const addFiles = async (list) => {
+    if (running) return;
     try {
-      setError(""); const incoming = Array.from(list); const kinds = classifyFiles(incoming.map((f) => f.name));
+      setError("");
+      const duplicates = [];
+      const seen = new Set(files.current.keys());
+      const incoming = Array.from(list).filter((f) => {
+        if (/\.(ab1|abi)$/i.test(f.name) && seen.has(f.name)) { duplicates.push(f.name); return false; }
+        seen.add(f.name); return true;
+      });
+      const kinds = classifyFiles(incoming.map((f) => f.name));
       incoming.forEach((f) => { files.current.set(f.name, f); buffers.current.delete(f.name); });
       setTraceNames((previous) => Array.from(new Set([...previous, ...kinds.traces]))); setPairsEdit({}); setOutcome(null);
       const sheet = incoming.find((f) => kinds.sheets.includes(f.name)); if (sheet) setSheetText(await sheet.text());
       const design = incoming.find((f) => kinds.designs.includes(f.name)); if (design) { setDesignName(design.name); setDesignText(""); setDesignIndex(0); setDesignText(await design.text()); }
+      if (duplicates.length) setError(`Already loaded: ${duplicates.join(", ")}. Kept the existing traces. For different reads with the same filename, rename them before adding; to replace a trace, remove it first.`);
       if (kinds.designs.length > 1) setError("More than one design file was selected. Loaded the first; use the design picker below to choose a different report.");
     } catch (e) { setError(`Could not read the selected file. Try copying it from the network drive to a local folder and selecting it again. ${e.message || ""}`); }
   };
@@ -79,11 +88,18 @@ export default function QuickStart() {
       <div className={`drop${dragging ? " over" : ""}`} onDragOver={(e) => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={(e) => { e.preventDefault(); setDragging(false); addFiles(e.dataTransfer.files); }}>
         <p><b>Drop the .ab1 files here</b> (controls and samples together, forward and reverse reads), plus, if you have them, the design (report .html or file .json) and a sample sheet (.csv).</p>
         <input ref={filePicker} hidden style={{ display: "none" }} type="file" multiple accept=".ab1,.abi,.csv,.tsv,.json,.html,.htm,text/html,application/json" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} aria-label="Choose files" />
-        <p><button type="button" disabled={running} onClick={() => filePicker.current.click()}>Choose files (AB1, HTML, JSON or CSV)</button></p>
+        <p><button type="button" disabled={running} onClick={() => filePicker.current.click()}>Add files (AB1, HTML, JSON or CSV)</button></p>
         <input ref={folderPicker} hidden style={{ display: "none" }} type="file" multiple webkitdirectory="" directory="" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} aria-label="Choose a folder" />
-        <p><button type="button" disabled={running} onClick={() => folderPicker.current.click()}>Choose a folder</button> <span className="muted">Imports supported files inside a folder. To select one HTML report, use Choose files or Choose design report.</span></p>
+        <p><button type="button" disabled={running} onClick={() => folderPicker.current.click()}>Add a folder</button> <span className="muted">Imports supported files inside a folder. To select one HTML report, use Add files or Choose design report.</span></p>
+        <p>Select files from one folder, then click Add files again for another folder. Earlier traces and your design stay loaded. You can also add folders one at a time.</p>
         <p className="muted">Nothing is uploaded: the files are read and analysed in this browser.</p>
       </div>
+      {traceNames.length > 0 && <details open>
+        <summary>Loaded traces ({traceNames.length})</summary>
+        <ul>{traceNames.map((name) => <li key={name}><span>{name}</span> <button type="button" disabled={running} aria-label={`Remove trace ${name}`} onClick={() => {
+          files.current.delete(name); buffers.current.delete(name); setTraceNames((previous) => previous.filter((n) => n !== name)); setPairsEdit({}); setOutcome(null); setError("");
+        }}>Remove</button></li>)}</ul>
+      </details>}
       <p className="field">Add or replace a design report (HTML or JSON)</p>
       <input ref={designPicker} hidden style={{ display: "none" }} id="q-design" aria-label="Design report file" type="file" accept=".html,.htm,.json,text/html,application/json" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
       <p><button type="button" disabled={running} onClick={() => designPicker.current.click()}>Choose design report (HTML or JSON)</button> <span className="muted">{designName || "No design selected."}</span></p>
