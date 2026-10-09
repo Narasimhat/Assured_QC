@@ -4,6 +4,7 @@
 
 - Engine: the read offset is re-anchored in the 20 bases before the cut when the two reads' base calls have drifted apart since the upstream alignment stretch (`src/offset.js`, option `refineOffset`). Fixes sizes that were one base out on a control read with extra base calls; never changes a pair whose offset already fits.
 - Engine: unplanned base changes (a second base the design does not predict) are named with position and base (`src/unplanned.js`, option `unplanned`); results carry `unplanned`, a warning and a CSV column; an otherwise accepted clone is held (`holdOnUnplanned: false` to turn off).
+- UI: the classic form's design box now takes an HTML design report (.html, .htm) as well as a .json design file (guides and recommended donor fill the form; before, only .json could be chosen). The Quick Start page already accepted reports.
 - Bench: `bench/adapters_sangerdecon.py` (comparator adapter, separate from the frozen adapters) and `bench/PREREGISTRATION_0.3.0.md`.
 - Evidence and limits: `docs/changes-0.3.0.md`. On 350 simulated traces (a fresh seed) the output is identical to 0.2.0.
 

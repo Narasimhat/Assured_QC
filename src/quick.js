@@ -30,6 +30,22 @@ export function readDesign(text, { designIndex = 0 } = {}) {
   return { kind: "report", designs, chosen, guides: chosen.guides.map((g) => g.sequence), donors: chosen.donors, label: chosen.title };
 }
 
+/**
+ * What the classic form takes from a design file: a JSON spec as it is, or, from an HTML design report, its guides and its recommended donor
+ * (a report has no reference window, so it cannot stand in for the spec in the junction check). Throws the parser's message for a file that is neither.
+ */
+export function readDesignForForm(text, { needsDonor = false, isJunction = false } = {}) {
+  const d = readDesign(text);
+  if (d.kind === "none") throw new Error("The file is empty.");
+  if (d.kind === "spec") return { kind: "spec", spec: d.spec, label: d.label, note: "" };
+  const donor = d.donors.find((x) => x.recommended) || d.donors[0] || null;
+  const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const notes = [`Read ${plural(d.guides.length, "guide")} and ${plural(d.donors.length, "donor")} from the design report "${d.label}"${d.designs.length > 1 ? ` (the file holds ${d.designs.length} designs; the first was used)` : ""}.`];
+  if (needsDonor && !donor) notes.push("The report has no ssODN donor (a long knock-in donor is not read from a report): paste it below.");
+  if (isJunction) notes.push("The junction check needs the .json design file; a report gives only guides and donors.");
+  return { kind: "report", guides: d.guides.join(", "), donor: donor ? donor.sequence : "", label: d.label, note: notes.join(" ") };
+}
+
 export function inferWorkflow(spec) {
   if (!spec) return "knockout";
   if ((spec.donors || []).length) return (spec.donors[0].insertBp || 0) > 0 ? "tag_small" : "snp";
