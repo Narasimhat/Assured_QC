@@ -20,23 +20,28 @@ export default function QuickStart() {
   const [pairsEdit, setPairsEdit] = useState({}); const [running, setRunning] = useState(false); const [progress, setProgress] = useState(null);
   const [outcome, setOutcome] = useState(null); const [picked, setPicked] = useState(0); const [figureBusy, setFigureBusy] = useState(false); const [error, setError] = useState("");
   const [dragging, setDragging] = useState(false);
+  const [designIndex, setDesignIndex] = useState(0);
 
   const addFiles = async (list) => {
-    setError(""); const incoming = Array.from(list); const kinds = classifyFiles(incoming.map((f) => f.name));
-    incoming.forEach((f) => files.current.set(f.name, f));
-    setTraceNames(Array.from(new Set([...traceNames, ...kinds.traces]))); setPairsEdit({}); setOutcome(null);
-    const sheet = incoming.find((f) => kinds.sheets.includes(f.name)); if (sheet) setSheetText(await sheet.text());
-    const design = incoming.find((f) => kinds.designs.includes(f.name)); if (design) { setDesignText(await design.text()); setDesignName(design.name); }
+    try {
+      setError(""); const incoming = Array.from(list); const kinds = classifyFiles(incoming.map((f) => f.name));
+      incoming.forEach((f) => { files.current.set(f.name, f); buffers.current.delete(f.name); });
+      setTraceNames((previous) => Array.from(new Set([...previous, ...kinds.traces]))); setPairsEdit({}); setOutcome(null);
+      const sheet = incoming.find((f) => kinds.sheets.includes(f.name)); if (sheet) setSheetText(await sheet.text());
+      const design = incoming.find((f) => kinds.designs.includes(f.name)); if (design) { setDesignName(design.name); setDesignText(""); setDesignIndex(0); setDesignText(await design.text()); }
+      if (kinds.designs.length > 1) setError("More than one design file was selected. Loaded the first; use the design picker below to choose a different report.");
+    } catch (e) { setError(`Could not read the selected file. Try copying it from the network drive to a local folder and selecting it again. ${e.message || ""}`); }
   };
 
   const built = useMemo(() => (traceNames.length ? buildPairs({ traceNames, sheetText }) : { pairs: [], problems: [] }), [traceNames, sheetText]);
-  const design = useMemo(() => { try { return { ...readDesign(designText), error: "" }; } catch (e) { return { kind: "none", error: e.message }; } }, [designText]);
+  const design = useMemo(() => { try { return { ...readDesign(designText, { designIndex }), error: "" }; } catch (e) { return { kind: "none", error: e.message }; } }, [designText, designIndex]);
   const pairs = built.pairs.map((p, i) => ({ ...p, ...(pairsEdit[i] || {}) }));
   const guides = guidesText.split(/[,;\s]+/).filter(Boolean);
   const lowCount = pairs.filter((p) => p.confidence === "low").length;
   const guideSource = design.kind === "spec" ? `the design file (${design.label})` : design.kind === "report" ? `the design report (${design.label}: ${design.guides.length} guide${design.guides.length === 1 ? "" : "s"})` : guides.length ? "the guides typed below" : "none: the cut site will be inferred from where the traces depart from the control";
 
   const run = async () => {
+    if (design.error || (designName && !designText)) { setError("Replace or remove the unreadable design before analysing."); return; }
     setRunning(true); setOutcome(null); setPicked(0); setError("");
     try {
       const needed = new Set(pairs.flatMap((p) => [...p.control, ...p.edited]));
@@ -76,7 +81,17 @@ export default function QuickStart() {
         <input type="file" multiple webkitdirectory="" directory="" onChange={(e) => addFiles(e.target.files)} aria-label="Choose a folder" />
         <p className="muted">Nothing is uploaded: the files are read and analysed in this browser.</p>
       </div>
-      {designName && <p className="muted">Design: {designName}{design.error ? <span className="error"> {design.error}</span> : null}</p>}
+      <label className="field" htmlFor="q-design">Add or replace a design report (HTML or JSON)</label>
+      <input id="q-design" type="file" accept=".html,.htm,.json,text/html,application/json" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
+      {designName && <div role="status">
+        <p>Design: <b>{designName}</b> <button type="button" disabled={running} onClick={() => { setDesignName(""); setDesignText(""); setDesignIndex(0); setOutcome(null); setError(""); }}>Remove design</button></p>
+        {design.error ? <p className="error">{design.error} Replace or remove this file to continue.</p> : design.kind === "report" ? <>
+          {design.designs.length > 1 && <><label htmlFor="q-design-choice">Design in this report</label><select id="q-design-choice" disabled={running} value={designIndex} onChange={(e) => { setDesignIndex(Number(e.target.value)); setOutcome(null); }}>{design.designs.map((d, i) => <option key={i} value={i}>{d.title}</option>)}</select></>}
+          <p>Imported {design.label}: {design.guides.length} guides, {design.donors.length} donors.</p>
+          <ul>{design.chosen.guides.map((g) => <li key={g.sequence}>{g.name}: <code>{g.sequence}</code></li>)}</ul>
+          {!traceNames.length && <p className="muted">Design ready. Add the control and sample AB1 files above to start analysis.</p>}
+        </> : design.kind === "spec" ? <p>Imported {design.label}.</p> : <p className="note">The design is empty or could not be read. Replace or remove it to continue.</p>}
+      </div>}
       {traceNames.length > 0 && (
         <>
           <p>{traceNames.length} trace{traceNames.length === 1 ? "" : "s"}; {pairs.length} sample{pairs.length === 1 ? "" : "s"} paired by {built.source === "sheet" ? "the sample sheet" : "file names"}. Guides from {guideSource}.</p>
@@ -104,7 +119,7 @@ export default function QuickStart() {
             <label className="field" htmlFor="q-goal">Accept</label>
             <select id="q-goal" value={goal} onChange={(e) => setGoal(e.target.value)}><option value="homozygous">homozygous edits only (heterozygous clones are held)</option><option value="any">heterozygous edits too</option></select>
           </details>
-          <p><button type="button" className="primary" disabled={running || !pairs.length} onClick={run}>{running ? "Analysing..." : `Analyse ${pairs.length} sample${pairs.length === 1 ? "" : "s"}`}</button> {progress && <span className="muted">{progress.done} of {progress.total}</span>}</p>
+          <p><button type="button" className="primary" disabled={running || !pairs.length || !!design.error || !!(designName && !designText)} onClick={run}>{running ? "Analysing..." : `Analyse ${pairs.length} sample${pairs.length === 1 ? "" : "s"}`}</button> {progress && <span className="muted">{progress.done} of {progress.total}</span>}</p>
         </>
       )}
       {error && <p className="error">{error}</p>}
