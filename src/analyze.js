@@ -5,6 +5,8 @@ import { decomposeAdaptive } from "./pursuit.js";
 import { computeIntervals, upstreamNoise, upstreamBackground } from "./uncertainty.js";
 import { confidenceFrom } from "./reliability.js";
 import { callGenotype } from "./genotype.js";
+import { shiftAt } from "./offset.js";
+import { scanUnplanned, describeUnplanned } from "./unplanned.js";
 
 const KO_MIN_SIZE = 21;
 export const isKnockoutSize = (size) => size % 3 !== 0 || Math.abs(size) >= KO_MIN_SIZE;
@@ -57,7 +59,7 @@ export function readMarkers(prepared) {
       return hasInsert && (donor.insertBp || 0) !== (donor.replacedBp || 0) && marker.pos >= start + (donor.replacedBp || 0) && marker.pos >= donor.refStart && marker.pos < donor.refEnd;
     });
     if (shifted) { rows.push({ marker, covered: false, reason: "downstream of the insertion (read from the allele decomposition)" }); continue; }
-    const k = j + prepared.shift;
+    const k = j + shiftAt(prepared, j);
     if (k < 0 || k >= prepared.edited.calls.length || !prepared.control.valid[j] || !prepared.edited.valid[k]) { rows.push({ marker, covered: false, reason: "low-quality or missing signal" }); continue; }
     const altIndex = BASE_ORDER.indexOf(marker.alt); const refIndex = BASE_ORDER.indexOf(marker.ref);
     const edited = prepared.edited.composition; const control = prepared.control.composition;
@@ -93,8 +95,11 @@ export function analysePair({ control, edited, spec, options = {} }) {
   const baseline = unexplainedBaselineFor(decomposition, background, options);
   const summary = summarise(decomposition, baseline);
   const intervals = options.intervals === false ? null : computeIntervals(decomposition, summary, { noiseFloor: upstreamNoise(prepared), ...(options.interval || {}) });
+  // a base change the design did not ask for (needs the fit's internals, so it is read before they are dropped)
+  const unplanned = scanUnplanned(prepared, decomposition.internals, decomposition, options.unplannedScan || {});
   delete decomposition.internals; // large matrices; not part of a result
   const warnings = [...prepared.warnings];
+  if (unplanned.length) warnings.push(`Unplanned base change${unplanned.length > 1 ? "s" : ""} relative to the cut: ${describeUnplanned(unplanned)}. The design does not predict ${unplanned.length > 1 ? "them" : "it"}; check the trace (a second edit, a bystander edit, a sequence variant or mixed template).`);
   if (decomposition.r2 !== null && decomposition.r2 < 0.8) warnings.push(`The fit explains only ${(decomposition.r2 * 100).toFixed(0)}% of the difference from the wild type; the mixture may contain alleles outside the expected library (large deletions, rearrangements) or the traces may be noisy.`);
   if (Math.abs(decomposition.rawSum - 1) > 0.15) warnings.push(`The fitted abundances sum to ${decomposition.rawSum.toFixed(2)} rather than 1, which indicates a poor fit.`);
   if (summary.unexplainedPct >= 15) warnings.push(`${summary.unexplainedPct}% of the signal after the cut is not explained by any allele in the library (a complex mixture, large deletions or noise). It is counted as not wild type; the wild-type share is reliable, but the split among the edited alleles, the KO score and the intended-edit share cover only the explained part.`);
@@ -105,7 +110,7 @@ export function analysePair({ control, edited, spec, options = {} }) {
   const genotype = options.sampleType === "clone" ? callGenotype(decomposition, options.genotype || {}) : null;
   return {
     ok: true, warnings, prepared, decomposition, summary, intervals, confidence: confidenceFrom(intervals, (prepared.spec.donors || []).length > 0), markerReadout, genotype,
-    quality,
+    quality, unplanned,
   };
 }
 

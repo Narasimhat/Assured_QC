@@ -10,7 +10,7 @@ export const DECISION_DEFAULTS = { koMinEdited: 90, editMinIntendedLow: 85, wtMa
 
 const koSize = (c) => c.size % 3 !== 0 || Math.abs(c.size) >= 21;
 
-export function decide(workflow, result, options = {}) {
+function decideCore(workflow, result, options = {}) {
   const opt = { ...DECISION_DEFAULTS, ...options }; const reasons = [];
   if (!result.ok) return { decision: "re-sequence", reasons: [result.error], next: "Check the file and the design, then repeat the sequencing or the analysis." };
   if (result.kind === "junction") {
@@ -43,6 +43,17 @@ export function decide(workflow, result, options = {}) {
   if (category === "heterozygous_edit" || category === "edit_plus_indel" || category === "edit_plus_partial") return { decision: opt.goal === "homozygous" ? "hold" : "accept", reasons: [g.summary], next: opt.goal === "homozygous" ? "One allele is not corrected: second round of editing or choose another clone." : "Accepted as heterozygous." };
   if (category === "homozygous_edit_indel") return { decision: "hold", reasons: [g.summary], next: "The edit carries an indel near the cut: check the sequence by hand." };
   return { decision: "hold", reasons: [g?.summary || `Intended edit ${s.intendedEditPct}% (interval ${iv ? `${iv.intendedEditPct[0]}-${iv.intendedEditPct[1]}` : "n/a"}).`], next: "Mixed result: re-clone or check the traces." };
+}
+
+/** A clone that would be accepted but carries a base change the design did not ask for is held: it needs a look at the trace. */
+export function decide(workflow, result, options = {}) {
+  const d = decideCore(workflow, result, options);
+  const hits = result.ok && result.kind !== "junction" ? result.unplanned || [] : [];
+  if (d.decision === "reject" || !hits.length || options.holdOnUnplanned === false) return d;
+  const where = hits.map((h) => `${h.relative >= 0 ? "+" : ""}${h.relative} ${h.change} (${Math.round(h.fraction * 100)}%)`).join(", ");
+  const reasons = [...d.reasons, `Unplanned base change near the cut: ${where}.`];
+  if (d.decision !== "accept") return { ...d, reasons };
+  return { decision: "hold", reasons, next: "Look at the trace at that position and sequence the other direction before using this clone; it may carry a second edit or a variant." };
 }
 
 export const DECISION_ORDER = ["accept", "hold", "re-sequence", "reject"];

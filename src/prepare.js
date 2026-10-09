@@ -10,10 +10,12 @@ import { orientAndAlign, localAlign } from "./align.js";
 import { reverseSpec } from "./designSpec.js";
 import { reverseComplement } from "./seq.js";
 import { describeMixedSignal } from "./diagnose.js";
+import { OFFSET_DEFAULTS, refineOffsetAtCut } from "./offset.js";
 
 export const DEFAULTS = {
   qualityCutoff: 30, qualityWindow: 15, minAlignWindow: 40, alignGapBeforeCut: 15,
   maxShift: 12, preCut: 25, postCut: 150, maxPatches: 6, minIdentity: 0.9, minAlignedBases: 150, patchPurity: 0.85,
+  ...OFFSET_DEFAULTS,
 };
 
 function runningMean(values, window) {
@@ -116,6 +118,14 @@ export function prepareSample({ control, edited, spec, options = {} }) {
   }
   const offset = bestOffset(controlModel, editedModel, upstream);
   if (offset.matches < 0.9) return { ok: false, error: `The edited trace does not align to the control upstream of the cut (identity ${(offset.matches * 100).toFixed(0)}% over the aligned stretch, or too little of it aligns). Use the same primer and the same amplicon for both.`, warnings, alignment: al };
+  // The offset was measured upstream; re-anchor it in the stretch just before the cut when the two reads' base calls have drifted apart in between (offset.js).
+  const shiftUp = offset.shift; let shiftPivot = -Infinity; let offsetRefined = null;
+  const refined = refineOffsetAtCut({ control: controlModel, edited: editedModel, firstCut, shift: offset.shift, options: opt });
+  if (refined) {
+    offsetRefined = refined; offset.shift = refined.shift; shiftPivot = refined.pivot;
+    const n = Math.abs(refined.delta);
+    warnings.push(`Between the stretch used to align the traces and the cut, the edited read has ${n} ${refined.delta < 0 ? "fewer" : "more"} base call${n === 1 ? "" : "s"} than the control (a missed or extra call by the base caller). The offset was re-anchored in the ${opt.refineSpan} bases before the cut (${shiftUp} to ${refined.shift}); without it every size after the cut would be off by ${n} base${n === 1 ? "" : "s"}.`);
+  }
   if (offset.partial) warnings.push(`Only ${offset.aligned} of ${offset.pieceLength} bases of the control's upstream stretch align to the edited trace (the start of the edited read is poorly called); the offset was taken from those.`);
   // A start that differs by a few bases is routine (primer position, trimming) and is not a reason for concern.
   if (Math.abs(offset.shift) >= 10) warnings.push(`The edited trace starts ${Math.abs(offset.shift)} base${Math.abs(offset.shift) === 1 ? "" : "s"} ${offset.shift > 0 ? "later" : "earlier"} than the control; it was shifted to match.`);
@@ -160,7 +170,7 @@ export function prepareSample({ control, edited, spec, options = {} }) {
   const n = controlModel.calls.length;
   const discordance = new Float64Array(n).fill(NaN);
   for (let j = 0; j < n; j += 1) {
-    const k = j + offset.shift;
+    const k = j + (j < shiftPivot ? shiftUp : offset.shift);
     if (k < 0 || k >= editedModel.calls.length || !controlModel.valid[j] || !editedModel.valid[k]) continue;
     let sum = 0;
     for (let b = 0; b < 4; b += 1) sum += Math.abs(editedModel.composition[k * 4 + b] - controlModel.composition[j * 4 + b]);
@@ -168,7 +178,7 @@ export function prepareSample({ control, edited, spec, options = {} }) {
   }
   return {
     ok: true, warnings, orientation: oriented.orientation, spec: patchedSpec, originalSpec: designSpec,
-    control: controlModel, edited: editedModel, shift: offset.shift, readToRef, cuts, firstCut, lastCut,
+    control: controlModel, edited: editedModel, shift: offset.shift, shiftUp, shiftPivot, offsetRefined, readToRef, cuts, firstCut, lastCut,
     alignmentWindow: upstream, window: { start: windowStart, end: windowEnd }, patches, discordance, alignment: { identity: al.identity, alignedBases },
     reference: patchedSpec.reference.sequence,
   };

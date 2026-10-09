@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { WORKFLOWS, headline } from "./batch.js";
 import Detail from "./Detail.jsx";
 import QuickStart from "./QuickStart.jsx";
+import { readDesignForForm } from "./quick.js";
 import { buildQcReportHtml, buildResultsCsv } from "./report.js";
 
 const FLOW_KEYS = Object.keys(WORKFLOWS);
@@ -27,6 +28,7 @@ export default function App() {
   const [designSpec, setDesignSpec] = useState(null);
   const [designName, setDesignName] = useState("");
   const [designError, setDesignError] = useState("");
+  const [designNote, setDesignNote] = useState("");
   const [guides, setGuides] = useState("");
   const [donor, setDonor] = useState("");
   const [gene, setGene] = useState("");
@@ -46,9 +48,15 @@ export default function App() {
 
   const onDesign = async (event) => {
     const file = event.target.files[0];
-    setDesignError(""); setDesignSpec(null); setDesignName("");
+    setDesignError(""); setDesignSpec(null); setDesignName(""); setDesignNote("");
     if (!file) return;
-    try { setDesignSpec(JSON.parse(await file.text())); setDesignName(file.name); } catch (error) { setDesignError(`That file is not valid JSON: ${error.message}`); }
+    const isReport = /\.html?$/i.test(file.name);
+    try {
+      const read = readDesignForForm(await file.text(), { needsDonor: flow.needsDonor, isJunction });
+      setDesignName(file.name);
+      if (read.kind === "spec") setDesignSpec(read.spec);
+      else { setGuides(read.guides); if (read.donor) setDonor(read.donor); setDesignNote(read.note); }
+    } catch (error) { setDesignError(isReport ? `That design report could not be read: ${error.message}` : `That file is not valid JSON: ${error.message}`); }
   };
 
   const canRun = useMemo(() => {
@@ -84,6 +92,7 @@ export default function App() {
   return (
     <div className="page">
       <h1>Assured QC</h1>
+      <p><a href="https://assured-traceedit.vercel.app/unified.html">Open Assured Analysis: one project setup, AssuredQC + TraceEdit results</a></p>
       <p className="muted">Sanger-trace QC for CRISPR knockouts, deletions, SNP corrections and knock-ins. Files are read and analysed in your browser; nothing is uploaded.</p>
 
       <QuickStart />
@@ -102,9 +111,10 @@ export default function App() {
 
       <div className="card">
         <h2>2. Design</h2>
-        <label className="field" htmlFor="design">Design file exported from the design app (recommended)</label>
-        <input id="design" type="file" accept=".json,application/json" onChange={onDesign} />
+        <label className="field" htmlFor="design">Design file (.json) or design report (.html) exported from the design app (recommended)</label>
+        <input id="design" type="file" accept=".json,application/json,.html,.htm,text/html" onChange={onDesign} />
         {designName && <p className="muted">Loaded {designName}.</p>}
+        {designNote && <p className="muted">{designNote}</p>}
         {designError && <p className="error">{designError}</p>}
         {!isJunction && !designSpec && (
           <>

@@ -75,12 +75,12 @@ ${notes.map((n) => `<p>${esc(n)}</p>`).join("")}
 const csvCell = (value) => { const text = String(value ?? ""); return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text; };
 
 export function buildResultsCsv(workflow, results) {
-  const header = ["sample", "well", "decision", "decision_reason", "status", "result", "wild_type_pct", "edited_pct", "edited_lo", "edited_hi", "indel_pct", "between_cuts_pct", "intended_edit_pct", "intended_lo", "intended_hi", "blocking_only_pct", "ko_score_pct", "ko_lo", "ko_hi", "unexplained_pct", "confidence", "clone_call", "reads_used", "reads_agree", "junction_verdict", "fit_r2", "notes"];
+  const header = ["sample", "well", "decision", "decision_reason", "status", "result", "wild_type_pct", "edited_pct", "edited_lo", "edited_hi", "indel_pct", "between_cuts_pct", "intended_edit_pct", "intended_lo", "intended_hi", "blocking_only_pct", "ko_score_pct", "ko_lo", "ko_hi", "unexplained_pct", "confidence", "clone_call", "reads_used", "reads_agree", "junction_verdict", "fit_r2", "unplanned_changes", "notes"];
   const lines = [header.join(",")];
   results.forEach((r) => {
     const s = r.summary || {};
     const iv = r.intervals || {};
-    lines.push([r.name, r.well || "", r.decision?.decision || "", (r.decision?.reasons || []).join(" "), r.ok ? "analysed" : "failed", headline(workflow, r), s.wtPct, s.editedPct, iv.editedPct?.[0] ?? "", iv.editedPct?.[1] ?? "", s.indelPct, s.betweenCutsPct, s.intendedEditPct, iv.intendedEditPct?.[0] ?? "", iv.intendedEditPct?.[1] ?? "", s.partialConversionPct, s.koScorePct, iv.koScorePct?.[0] ?? "", iv.koScorePct?.[1] ?? "", s.unexplainedPct ?? "", r.confidence?.tier || "", r.genotype?.category || "", r.reads ? r.reads.length : (r.ok && r.kind !== "junction" ? 1 : ""), r.agreement ? r.agreement.agree : "", r.verdict?.status || "", r.quality?.r2 ?? "", (r.warnings || []).concat(r.ok ? [] : [r.error]).join(" | ")].map(csvCell).join(","));
+    lines.push([r.name, r.well || "", r.decision?.decision || "", (r.decision?.reasons || []).join(" "), r.ok ? "analysed" : "failed", headline(workflow, r), s.wtPct, s.editedPct, iv.editedPct?.[0] ?? "", iv.editedPct?.[1] ?? "", s.indelPct, s.betweenCutsPct, s.intendedEditPct, iv.intendedEditPct?.[0] ?? "", iv.intendedEditPct?.[1] ?? "", s.partialConversionPct, s.koScorePct, iv.koScorePct?.[0] ?? "", iv.koScorePct?.[1] ?? "", s.unexplainedPct ?? "", r.confidence?.tier || "", r.genotype?.category || "", r.reads ? r.reads.length : (r.ok && r.kind !== "junction" ? 1 : ""), r.agreement ? r.agreement.agree : "", r.verdict?.status || "", r.quality?.r2 ?? "", (r.unplanned || []).map((h) => `${h.relative}:${h.change}(${Math.round(h.fraction * 100)}%)`).join(" "), (r.warnings || []).concat(r.ok ? [] : [r.error]).join(" | ")].map(csvCell).join(","));
   });
   return `${lines.join("\n")}\n`;
 }

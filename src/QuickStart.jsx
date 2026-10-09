@@ -14,29 +14,44 @@ const arrayBufferOf = (file) => file.arrayBuffer();
 const interval = (iv) => (iv ? `${iv[0]}-${iv[1]}%` : "");
 
 export default function QuickStart() {
+  const filePicker = useRef(null); const folderPicker = useRef(null); const designPicker = useRef(null);
   const files = useRef(new Map()); const buffers = useRef(new Map());
   const [traceNames, setTraceNames] = useState([]); const [sheetText, setSheetText] = useState(""); const [designText, setDesignText] = useState(""); const [designName, setDesignName] = useState("");
   const [guidesText, setGuidesText] = useState(""); const [donorText, setDonorText] = useState(""); const [nuclease, setNuclease] = useState("SpCas9"); const [typeOverride, setTypeOverride] = useState(""); const [goal, setGoal] = useState("homozygous");
   const [pairsEdit, setPairsEdit] = useState({}); const [running, setRunning] = useState(false); const [progress, setProgress] = useState(null);
   const [outcome, setOutcome] = useState(null); const [picked, setPicked] = useState(0); const [figureBusy, setFigureBusy] = useState(false); const [error, setError] = useState("");
   const [dragging, setDragging] = useState(false);
+  const [designIndex, setDesignIndex] = useState(0);
 
   const addFiles = async (list) => {
-    setError(""); const incoming = Array.from(list); const kinds = classifyFiles(incoming.map((f) => f.name));
-    incoming.forEach((f) => files.current.set(f.name, f));
-    setTraceNames(Array.from(new Set([...traceNames, ...kinds.traces]))); setPairsEdit({}); setOutcome(null);
-    const sheet = incoming.find((f) => kinds.sheets.includes(f.name)); if (sheet) setSheetText(await sheet.text());
-    const design = incoming.find((f) => kinds.designs.includes(f.name)); if (design) { setDesignText(await design.text()); setDesignName(design.name); }
+    if (running) return;
+    try {
+      setError("");
+      const duplicates = [];
+      const seen = new Set(files.current.keys());
+      const incoming = Array.from(list).filter((f) => {
+        if (/\.(ab1|abi)$/i.test(f.name) && seen.has(f.name)) { duplicates.push(f.name); return false; }
+        seen.add(f.name); return true;
+      });
+      const kinds = classifyFiles(incoming.map((f) => f.name));
+      incoming.forEach((f) => { files.current.set(f.name, f); buffers.current.delete(f.name); });
+      setTraceNames((previous) => Array.from(new Set([...previous, ...kinds.traces]))); setPairsEdit({}); setOutcome(null);
+      const sheet = incoming.find((f) => kinds.sheets.includes(f.name)); if (sheet) setSheetText(await sheet.text());
+      const design = incoming.find((f) => kinds.designs.includes(f.name)); if (design) { setDesignName(design.name); setDesignText(""); setDesignIndex(0); setDesignText(await design.text()); }
+      if (duplicates.length) setError(`Already loaded: ${duplicates.join(", ")}. Kept the existing traces. For different reads with the same filename, rename them before adding; to replace a trace, remove it first.`);
+      if (kinds.designs.length > 1) setError("More than one design file was selected. Loaded the first; use the design picker below to choose a different report.");
+    } catch (e) { setError(`Could not read the selected file. Try copying it from the network drive to a local folder and selecting it again. ${e.message || ""}`); }
   };
 
   const built = useMemo(() => (traceNames.length ? buildPairs({ traceNames, sheetText }) : { pairs: [], problems: [] }), [traceNames, sheetText]);
-  const design = useMemo(() => { try { return { ...readDesign(designText), error: "" }; } catch (e) { return { kind: "none", error: e.message }; } }, [designText]);
+  const design = useMemo(() => { try { return { ...readDesign(designText, { designIndex }), error: "" }; } catch (e) { return { kind: "none", error: e.message }; } }, [designText, designIndex]);
   const pairs = built.pairs.map((p, i) => ({ ...p, ...(pairsEdit[i] || {}) }));
   const guides = guidesText.split(/[,;\s]+/).filter(Boolean);
   const lowCount = pairs.filter((p) => p.confidence === "low").length;
   const guideSource = design.kind === "spec" ? `the design file (${design.label})` : design.kind === "report" ? `the design report (${design.label}: ${design.guides.length} guide${design.guides.length === 1 ? "" : "s"})` : guides.length ? "the guides typed below" : "none: the cut site will be inferred from where the traces depart from the control";
 
   const run = async () => {
+    if (design.error || (designName && !designText)) { setError("Replace or remove the unreadable design before analysing."); return; }
     setRunning(true); setOutcome(null); setPicked(0); setError("");
     try {
       const needed = new Set(pairs.flatMap((p) => [...p.control, ...p.edited]));
@@ -72,11 +87,31 @@ export default function QuickStart() {
       <h2>Quick start: drop your files</h2>
       <div className={`drop${dragging ? " over" : ""}`} onDragOver={(e) => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={(e) => { e.preventDefault(); setDragging(false); addFiles(e.dataTransfer.files); }}>
         <p><b>Drop the .ab1 files here</b> (controls and samples together, forward and reverse reads), plus, if you have them, the design (report .html or file .json) and a sample sheet (.csv).</p>
-        <input type="file" multiple accept=".ab1,.abi,.csv,.tsv,.json,.html,.htm" onChange={(e) => addFiles(e.target.files)} aria-label="Choose files" />
-        <input type="file" multiple webkitdirectory="" directory="" onChange={(e) => addFiles(e.target.files)} aria-label="Choose a folder" />
+        <input ref={filePicker} hidden style={{ display: "none" }} type="file" multiple accept=".ab1,.abi,.csv,.tsv,.json,.html,.htm,text/html,application/json" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} aria-label="Choose files" />
+        <p><button type="button" disabled={running} onClick={() => filePicker.current.click()}>Add files (AB1, HTML, JSON or CSV)</button></p>
+        <input ref={folderPicker} hidden style={{ display: "none" }} type="file" multiple webkitdirectory="" directory="" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} aria-label="Choose a folder" />
+        <p><button type="button" disabled={running} onClick={() => folderPicker.current.click()}>Add a folder</button> <span className="muted">Imports supported files inside a folder. To select one HTML report, use Add files or Choose design report.</span></p>
+        <p>Select files from one folder, then click Add files again for another folder. Earlier traces and your design stay loaded. You can also add folders one at a time.</p>
         <p className="muted">Nothing is uploaded: the files are read and analysed in this browser.</p>
       </div>
-      {designName && <p className="muted">Design: {designName}{design.error ? <span className="error"> {design.error}</span> : null}</p>}
+      {traceNames.length > 0 && <details open>
+        <summary>Loaded traces ({traceNames.length})</summary>
+        <ul>{traceNames.map((name) => <li key={name}><span>{name}</span> <button type="button" disabled={running} aria-label={`Remove trace ${name}`} onClick={() => {
+          files.current.delete(name); buffers.current.delete(name); setTraceNames((previous) => previous.filter((n) => n !== name)); setPairsEdit({}); setOutcome(null); setError("");
+        }}>Remove</button></li>)}</ul>
+      </details>}
+      <p className="field">Add or replace a design report (HTML or JSON)</p>
+      <input ref={designPicker} hidden style={{ display: "none" }} id="q-design" aria-label="Design report file" type="file" accept=".html,.htm,.json,text/html,application/json" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
+      <p><button type="button" disabled={running} onClick={() => designPicker.current.click()}>Choose design report (HTML or JSON)</button> <span className="muted">{designName || "No design selected."}</span></p>
+      {designName && <div role="status">
+        <p>Design: <b>{designName}</b> <button type="button" disabled={running} onClick={() => { setDesignName(""); setDesignText(""); setDesignIndex(0); setOutcome(null); setError(""); }}>Remove design</button></p>
+        {design.error ? <p className="error">{design.error} Replace or remove this file to continue.</p> : design.kind === "report" ? <>
+          {design.designs.length > 1 && <><label htmlFor="q-design-choice">Design in this report</label><select id="q-design-choice" disabled={running} value={designIndex} onChange={(e) => { setDesignIndex(Number(e.target.value)); setOutcome(null); }}>{design.designs.map((d, i) => <option key={i} value={i}>{d.title}</option>)}</select></>}
+          <p>Imported {design.label}: {design.guides.length} guides, {design.donors.length} donors.</p>
+          <ul>{design.chosen.guides.map((g) => <li key={g.sequence}>{g.name}: <code>{g.sequence}</code></li>)}</ul>
+          {!traceNames.length && <p className="muted">Design ready. Add the control and sample AB1 files above to start analysis.</p>}
+        </> : design.kind === "spec" ? <p>Imported {design.label}.</p> : <p className="note">The design is empty or could not be read. Replace or remove it to continue.</p>}
+      </div>}
       {traceNames.length > 0 && (
         <>
           <p>{traceNames.length} trace{traceNames.length === 1 ? "" : "s"}; {pairs.length} sample{pairs.length === 1 ? "" : "s"} paired by {built.source === "sheet" ? "the sample sheet" : "file names"}. Guides from {guideSource}.</p>
@@ -104,7 +139,7 @@ export default function QuickStart() {
             <label className="field" htmlFor="q-goal">Accept</label>
             <select id="q-goal" value={goal} onChange={(e) => setGoal(e.target.value)}><option value="homozygous">homozygous edits only (heterozygous clones are held)</option><option value="any">heterozygous edits too</option></select>
           </details>
-          <p><button type="button" className="primary" disabled={running || !pairs.length} onClick={run}>{running ? "Analysing..." : `Analyse ${pairs.length} sample${pairs.length === 1 ? "" : "s"}`}</button> {progress && <span className="muted">{progress.done} of {progress.total}</span>}</p>
+          <p><button type="button" className="primary" disabled={running || !pairs.length || !!design.error || !!(designName && !designText)} onClick={run}>{running ? "Analysing..." : `Analyse ${pairs.length} sample${pairs.length === 1 ? "" : "s"}`}</button> {progress && <span className="muted">{progress.done} of {progress.total}</span>}</p>
         </>
       )}
       {error && <p className="error">{error}</p>}
