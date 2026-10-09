@@ -51,7 +51,7 @@ All 350 outputs are identical between versions, and the re-anchoring never trigg
 
 ## Not done
 
-* The production UI build (`vite build`) and the browser UI were not run; the engine tests were.
+* The browser UI was not exercised by hand. The production build (`vite build`) and the engine tests, including the CLI test that cannot run in the author's sandbox, pass in CI on this branch.
 * The README criteria 0.2.0 did not meet (WT false positives, 5 % detection limit, graded-HDR error, interval coverage) are unchanged.
 * ICE 1.2.0 (non-commercial research licence) was run locally as a comparator and is not included here.
 * Merging remains held for the owner's decision; this branch is stacked on `feat/assured-qc-0.2.0`.
