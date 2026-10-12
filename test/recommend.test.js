@@ -101,6 +101,8 @@ test("protein results: absent confirms a clean knockout, present rejects, trunca
   const rec = recommendClones(applied.results); const a = rec[0];
   assert.equal(a.score, 100); assert.equal(a.tier, "confirmed"); assert.equal(a.priority, "confirmed"); assert.equal(a.rank, 1);
   assert.equal(rec[1].priority, "discard", "a clone whose protein is present is not carried forward");
+  const rec2 = recommendClones(applied.results.filter((r) => ["a", "c", "d"].includes(r.name))); const byc = Object.fromEntries(applied.results.filter((r) => ["a", "c", "d"].includes(r.name)).map((r, i) => [r.name, rec2[i]]));
+  assert.equal(byc.a.priority, "confirmed"); assert.equal(byc.c.priority, "caution", "a measured truncated product is not carried forward"); assert.equal(byc.d.priority, "caution"); assert.ok(byc.c.score <= 20 && byc.c.rank > byc.a.rank);
 });
 
 test("recommendation CSV: ranked, quoted, one row per clone with a rank or a verdict", () => {

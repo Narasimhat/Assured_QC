@@ -84,7 +84,7 @@ const CONF = { high: 0, moderate: 1, low: 2 };
  * @param {Array} results run results (one per sample, each with decision)
  * @returns {Array} one recommendation per result, in the order of `results`:
  *   { rank, score, basis, tier, tierText, priority, action, why, testWith, flags, group, groupOf, duplicateOf }
- *   priority: first | reserve | duplicate | resequence | discard | confirmed | none (not a clone)
+ *   priority: first | reserve | duplicate | caution (protein measured: truncated or reduced) | resequence | discard | confirmed | none (not a clone)
  */
 export function recommendClones(results, options = {}) {
   const opt = { ...RECOMMEND_DEFAULTS, ...options, risk: { ...RISK_DEFAULTS, ...(options.risk || {}) } };
@@ -97,14 +97,14 @@ export function recommendClones(results, options = {}) {
     if (r.ok && !r.reads) flags.push("one read only");
     else if (r.reads && r.reads.length === 1) flags.push("one read only");
     if (r.confidence && r.confidence.tier === "low") flags.push("low confidence in the edited share");
-    const confirmed = confirmation === "absent";
-    return { r, support, label, flags, confirmed, quality: flags.some((f) => /trace quality/.test(f)) ? 1 : 0, nAlleles: alleles.length || 9 };
+    const confirmed = confirmation === "absent"; const against = confirmation === "truncated" || confirmation === "reduced";
+    return { r, support, label, flags, confirmed, against, quality: flags.some((f) => /trace quality/.test(f)) ? 1 : 0, nAlleles: alleles.length || 9 };
   });
   const out = results.map(() => ({ rank: null, score: null, basis: "", tier: "", tierText: "", priority: "none", action: "", why: [], testWith: [], flags: [], group: "", groupOf: 0, duplicateOf: null }));
   const eligible = []; 
   info.forEach((x, i) => {
     if (!x) return; const d = x.r.decision.decision;
-    const base = out[i]; base.score = x.confirmed ? 100 : x.support.score; base.basis = x.confirmed ? "protein absent on the blot, on top of the sequence prediction" : x.support.basis; base.tier = x.confirmed ? "confirmed" : x.support.tier; base.tierText = TIER_TEXT[base.tier] || ""; base.group = x.label; base.flags = x.flags;
+    const base = out[i]; base.score = x.confirmed ? 100 : x.against ? Math.min(20, x.support.score) : x.support.score; base.basis = x.confirmed ? "protein absent on the blot, on top of the sequence prediction" : x.against ? `protein measured (${x.r.confirmation.protein}); the sequence prediction did not hold` : x.support.basis; base.tier = x.confirmed ? "confirmed" : x.against ? "unsupported" : x.support.tier; base.tierText = TIER_TEXT[base.tier] || ""; base.group = x.label; base.flags = x.flags;
     // the same allele can come as two library rows (a deletion slid along a repeat); one line per allele and mechanism, with its share
     const lines = new Map(); x.support.alleles.forEach((a) => { const key = `${a.label}: ${a.phrase}`; lines.set(key, (lines.get(key) || 0) + a.share); });
     base.why = [...lines].map(([key, share]) => (lines.size > 1 ? `${key} [${Math.round(share * 100)}% of the signal]` : key));
@@ -115,11 +115,12 @@ export function recommendClones(results, options = {}) {
     eligible.push(i);
   });
   eligible.sort((a, b) => { const x = info[a]; const y = info[b];
-    return (y.confirmed - x.confirmed) || (out[b].score - out[a].score) || (x.nAlleles - y.nAlleles) || (x.quality - y.quality) || ((CONF[x.r.confidence?.tier] ?? 1) - (CONF[y.r.confidence?.tier] ?? 1)) || natural(x.r.name, y.r.name); });
+    return (y.confirmed - x.confirmed) || (x.against - y.against) || (out[b].score - out[a].score) || (x.nAlleles - y.nAlleles) || (x.quality - y.quality) || ((CONF[x.r.confidence?.tier] ?? 1) - (CONF[y.r.confidence?.tier] ?? 1)) || natural(x.r.name, y.r.name); });
   const seen = new Map(); let reps = 0;
   eligible.forEach((i, k) => {
     const x = info[i]; const o = out[i]; o.rank = k + 1;
     if (x.confirmed) { o.priority = "confirmed"; o.action = "Protein absent: use this clone. Consider a second antibody to another region, and out-out PCR for a large deletion on the other allele."; if (!seen.has(x.label)) seen.set(x.label, i); return; }
+    if (x.against) { o.priority = "caution"; o.action = `Protein measured (${x.r.confirmation.protein}): a protein is still made. Test whether it is functional, or choose another clone.`; return; }
     if (seen.has(x.label)) { const rep = seen.get(x.label); o.priority = "duplicate"; o.duplicateOf = info[rep].r.name; o.action = `Same genotype as ${info[rep].r.name}: keep as a backup, test only if that clone fails.`; return; }
     seen.set(x.label, i); reps += 1;
     if (reps <= opt.panel) { o.priority = "first"; o.action = x.r.decision.decision === "accept" ? "Carry forward; confirm the protein as routine." : "Carry forward and test first (best clone of its genotype)."; }

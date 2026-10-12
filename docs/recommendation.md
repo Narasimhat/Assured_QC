@@ -51,7 +51,7 @@ The browser shows the same ranking: a Priority column, the support and the reaso
 | truncated | hold: a shorter product is made; test whether it is functional |
 | reduced | hold |
 
-The earlier decision is kept in `decision.before`, and the result is written into the reasons. Use an antibody whose epitope lies outside the edited region. An antibody that binds in the lost part reads `absent` for
+A clone whose protein is truncated or reduced is ranked below every unmeasured clone and marked **caution** (a protein is still made), and it is not counted toward the panel. The earlier decision is kept in `decision.before`, and the result is written into the reasons. Use an antibody whose epitope lies outside the edited region. An antibody that binds in the lost part reads `absent` for
 a truncated product and proves nothing; two antibodies to different regions (one on each side of the edit) are better. The tool cannot check the epitope of the antibody you used.
 
 ## Limits

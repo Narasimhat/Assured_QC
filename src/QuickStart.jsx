@@ -75,7 +75,7 @@ export default function QuickStart() {
 
   const result = outcome ? outcome.results[picked] : null; const counts = outcome ? tally(outcome.results.map((r) => r.decision)) : null;
   const ranked = outcome ? withRecommendations(outcome.results) : null; const recommendation = ranked && ranked[picked] ? ranked[picked].recommendation : null;
-  const PRIORITY_LABEL = { first: "carry forward", confirmed: "confirmed", reserve: "reserve", duplicate: "backup", discard: "discard", resequence: "sequence again" };
+  const PRIORITY_LABEL = { first: "carry forward", confirmed: "confirmed", reserve: "reserve", duplicate: "backup", caution: "protein still made", discard: "discard", resequence: "sequence again" };
   const stamp = new Date().toISOString().slice(0, 10);
   const figure = async (format) => {
     if (!outcome || !result || !result.ok) return; setFigureBusy(true);
