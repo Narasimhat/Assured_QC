@@ -23,6 +23,7 @@ import { parseCodingFields } from "../src/coding.js";
 import { calibrate, parseObservations, calibrationMarkdown } from "../src/calibration.js";
 import { withRecommendations, applyObservations, recommendationCsv, panelOf } from "../src/recommend.js";
 import { runProteinFigure } from "../src/proteinFigure.js";
+import { runSummaryFigure } from "../src/summaryFigure.js";
 import { autoPair, parseSampleSheet, resolveSheet } from "../src/sheet.js";
 import { parseDesignReport } from "../src/designReport.js";
 import { buildQcReportHtml, buildResultsCsv, QC_VERSION } from "../src/report.js";
@@ -153,6 +154,7 @@ export async function main(argv) {
   writeFileSync(path.join(out, "plate.html"), buildPlateReportHtml({ title: path.basename(path.resolve(folder)), results }));
   writeFileSync(path.join(out, "resequence.csv"), resequenceListCsv(results));
   writeFileSync(path.join(out, "recommendation.csv"), recommendationCsv(results));
+  const summarySvg = runSummaryFigure(results, { title: `Run summary: ${path.basename(path.resolve(folder))}` }); if (summarySvg) writeFileSync(path.join(out, "summary.svg"), summarySvg);
   const productsSvg = runProteinFigure(results); if (productsSvg) writeFileSync(path.join(out, "protein_products.svg"), productsSvg);
   writeFileSync(path.join(out, "run.json"), JSON.stringify({ tool: "Assured QC", version: QC_VERSION, finished: new Date().toISOString(), seconds, threads, samples: results.length, samplesPerHour: Math.round((results.length / seconds) * 3600), arguments: { ...args, _: undefined }, geneRecord: genbank ? { file: path.basename(args.genbank), sha256: createHash("sha256").update(genbank).digest("hex"), options: codingOptions } : (designSpec && designSpec.coding && tasks.some((t) => t.options.codingInput) ? { file: "coding block of the design file", sha256: createHash("sha256").update(JSON.stringify(designSpec.coding)).digest("hex"), options: codingOptions } : null), workflow: workflowKey, nuclease, pairingProblems: problems, decisions: tally(results.map((r) => r.decision)) }, null, 1));
   const t = tally(results.map((r) => r.decision)); console.log(`${results.length} samples in ${seconds.toFixed(1)} s on ${threads} thread(s) (${Math.round((results.length / seconds) * 3600)} per hour): accept ${t.accept}, hold ${t.hold}, re-sequence ${t["re-sequence"]}, reject ${t.reject}. Results in ${out}`);
