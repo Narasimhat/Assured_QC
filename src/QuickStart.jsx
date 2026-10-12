@@ -7,6 +7,7 @@ import { buildQcReportHtml, buildResultsCsv } from "./report.js";
 import { buildPlateReportHtml, resequenceListCsv } from "./plateReport.js";
 import { tally, DECISION_ORDER } from "./decision.js";
 import { withRecommendations, recommendationCsv, panelOf } from "./recommend.js";
+import { runProteinFigure } from "./proteinFigure.js";
 import { NUCLEASES } from "./nucleases.js";
 import Detail from "./Detail.jsx";
 
@@ -74,7 +75,7 @@ export default function QuickStart() {
   };
 
   const result = outcome ? outcome.results[picked] : null; const counts = outcome ? tally(outcome.results.map((r) => r.decision)) : null;
-  const ranked = outcome ? withRecommendations(outcome.results) : null; const recommendation = ranked && ranked[picked] ? ranked[picked].recommendation : null;
+  const runFigure = outcome ? runProteinFigure(outcome.results) : ""; const ranked = outcome ? withRecommendations(outcome.results) : null; const recommendation = ranked && ranked[picked] ? ranked[picked].recommendation : null;
   const PRIORITY_LABEL = { first: "carry forward", confirmed: "confirmed", reserve: "reserve", duplicate: "backup", caution: "protein still made", discard: "discard", resequence: "sequence again" };
   const stamp = new Date().toISOString().slice(0, 10);
   const figure = async (format) => {
@@ -172,6 +173,7 @@ export default function QuickStart() {
             <button type="button" className="link" onClick={() => download(`assured_qc_plate_${stamp}.html`, buildPlateReportHtml({ title: "Plate", results: ranked }), "text/html")}>Plate view (HTML)</button>
             <button type="button" className="link" onClick={() => download(`assured_qc_resequence_${stamp}.csv`, resequenceListCsv(outcome.results), "text/csv")}>Re-sequence list (CSV)</button>
             <button type="button" className="link" onClick={() => download(`assured_qc_recommendation_${stamp}.csv`, recommendationCsv(ranked), "text/csv")}>Recommendation (CSV)</button>
+            {runFigure && <button type="button" className="link" onClick={() => download(`assured_qc_protein_products_${stamp}.svg`, runFigure, "image/svg+xml")}>Protein products (SVG)</button>}
           </p>
           <div className="scroll">
             <table><thead><tr><th>Decision</th><th>Sample</th><th>Result</th><th>Edited, 95% interval</th><th>Confidence</th><th>Priority</th></tr></thead><tbody>

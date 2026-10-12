@@ -46,6 +46,7 @@ test("without a gene record nothing changes and the report says the knockout sco
   assert.deepEqual(withCoding.contributions.map((c) => c.label), plain.contributions.map((c) => c.label));
   const html = buildQcReportHtml({ workflow: "knockout", results: [plain] });
   assert.match(html, /proxy/i); assert.doesNotMatch(html, /Functional knockout/);
+  assert.doesNotMatch(html, /Predicted protein products/);
 });
 
 test("with a gene record each allele is translated: stop position agrees with an independent translation, call and interval are reported", () => {
@@ -70,6 +71,7 @@ test("the decision and the exports use the functional call", () => {
   const csv = buildResultsCsv("knockout", [r]); assert.match(csv.split("\n")[0], /functional_ko_pct/); assert.match(csv.split("\n")[0], /functional_call/);
   const html = buildQcReportHtml({ workflow: "knockout", results: [r] });
   assert.match(html, /Functional knockout/); assert.match(html, /Western/);
+  assert.match(html, /<svg[^>]*role="img"/); assert.match(html, /Predicted protein products/); assert.ok((html.match(/<svg /g) || []).length >= 1);
 });
 
 test("a gene record that does not contain the design's reference is reported, and the analysis still runs", () => {

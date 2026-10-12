@@ -301,7 +301,9 @@ export function assessOnModel(model, edit0, options = {}) {
   const siteWord = damaged.map((x) => `${x.donor ? "donor" : ""}${x.donor && x.acceptor ? " and " : ""}${x.acceptor ? "acceptor" : ""} site of intron ${x.j + 1}`).join("; ");
   const skip = evaluatePieces(model, edit, skipPieces, opt); const retain = evaluatePieces(model, edit, retainPieces, opt);
   const a = classifyOutcome(model, edit, skip, firstOrig, c0, c1, opt, ctx); const b = classifyOutcome(model, edit, retain, firstOrig, c0, c1, opt, ctx);
-  const details = { splice: { sites: siteWord, skippedExons: names, skipping: { class: a.class, lof: a.lof, summary: a.summary }, retention: { class: b.class, lof: b.lof, summary: b.summary } } };
+  // residues of the original protein that exon skipping keeps: those encoded before the first skipped exon (the figure of predicted products draws them)
+  if (skipIdx.size) { const firstSkipped = Math.min(...[...skipIdx].map((i) => pieces[i].orig[0])); a.details = { ...(a.details || {}), keptAa: Math.floor(model.exonLens.slice(0, firstSkipped).reduce((s, n) => s + n, 0) / 3) }; }
+  const details = { splice: { sites: siteWord, skippedExons: names, skipping: { class: a.class, lof: a.lof, summary: a.summary, details: a.details }, retention: { class: b.class, lof: b.lof, summary: b.summary, details: b.details } } };
   if (a.lof === true && b.lof === true) return { class: "lof_splice", lof: true, summary: `Canonical splice site destroyed (${siteWord}). Exon skipping (${names}): ${a.summary} Intron retention: ${b.summary}`, details };
   return { class: "splice_uncertain", lof: null, summary: `Canonical splice site destroyed (${siteWord}). Exon skipping (${names}): ${a.summary} Intron retention: ${b.summary} The outcome depends on which is used; RT-PCR across the exons shows it.`, details };
 }
@@ -398,7 +400,7 @@ export function assessFunction(context, contributions, options = {}) {
     confirm.push("Sanger cannot exclude a large deletion on the other allele or an off-target event; check zygosity by out-out PCR when it matters.");
   }
   return { rows, score: { lof: lofShare, uncertain: uncertainShare, lofPct: Math.round(lofShare * 1000) / 10, uncertainPct: Math.round(uncertainShare * 1000) / 10, notLofPct: Math.round((1 - lofShare - uncertainShare) * 1000) / 10 }, call: { status, text }, caveats, confirm, donorEdits,
-    context: { transcript: context.models[0].id, gene: context.models[0].gene, proteinLength: context.models[0].protLen, codingExons: context.models[0].segs.length, isoforms: context.models.length, windowIdentity: Math.round(context.location.identity * 1000) / 10, accession: context.gb.accession } };
+    context: { transcript: context.models[0].id, gene: context.models[0].gene, proteinLength: context.models[0].protLen, codingExons: context.models[0].segs.length, exonLengths: context.models[0].exonLens, regions: context.regions || [], epitope: context.epitope || null, isoforms: context.models.length, windowIdentity: Math.round(context.location.identity * 1000) / 10, accession: context.gb.accession } };
 }
 
 /** The part of the context that is safe to ship to a worker or write to JSON: no sequences. */

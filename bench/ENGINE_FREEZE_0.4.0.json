@@ -1,20 +1,23 @@
 {
  "frozen_at_utc": "2026-10-12T12:24:20Z",
- "purpose": "Engine state of Assured QC 0.4.0 as tagged. 0.4.0 adds the clone recommendation and protein-result input (src/recommend.js, reporting layer only); no estimation file changed.",
+ "purpose": "Engine state of Assured QC 0.4.0 as tagged. 0.4.0 adds the clone recommendation, the protein-result input and the figure of predicted protein products (reporting layer; coding.js reports more of what it computes). No estimate, call, score or decision changes.",
  "supersedes": "bench/ENGINE_FREEZE_0.3.1.json, which is left unchanged",
  "files_changed_since_previous_freeze": [
   "calibration.js",
+  "coding.js",
   "plateReport.js",
   "report.js"
  ],
  "files_added_since_previous_freeze": [
-  "recommend.js"
+  "proteinFigure.js",
+  "recommend.js",
+  "saveFigure.js"
  ],
- "tests": "27 files, 152 pass, 0 fail (cli-runner.test.js excluded locally; CI runs it)",
+ "tests": "28 files, 157 pass, 0 fail (cli-runner.test.js excluded locally; CI runs it)",
  "no_regression": {
-  "estimation_files_byte_identical_to_0_3_1": 34,
+  "estimation_files_byte_identical_to_0_3_1": 33,
   "of": 37,
-  "note": "the three changed files are reporting code (version string and CSV columns, plate view, an export keyword); the first 32 columns of results.csv for a real clone run are identical to 0.3.1"
+  "note": "report.js, plateReport.js and calibration.js are reporting code; coding.js adds fields (splice outcome details, exon lengths, regions, epitope) without changing a call. Without a gene record coding.js is not used. The first 32 columns of results.csv and the functional calls of a real clone run are identical to 0.3.1."
  },
  "engine_sha256": {
   "abif.js": "1f994a5c9021ff0aa1974f3a76b5fb02344e9455e633bfca91bf0a1431a6d159",
@@ -25,7 +28,7 @@
   "batch.js": "803a55d7d5b8b60cc7677e58c60dfcff21291783f931b8e97083375756c6ba4c",
   "calibration.js": "b7818d4360468f558b9567ade3095997e075c41909723bd41ffa61cbe06744eb",
   "charts.js": "75876d98a70efa1880c22184fa4b20aa3768bab5ce16674a4d0670dec957d45d",
-  "coding.js": "6fb33ad7fc8d524b3251cf0819c9a576d5a0acf46e4b4b1b88f8de7f83e2cf88",
+  "coding.js": "d4da64eff0dffb83e6a0084a595d39449eedaf0c4a44aed48658af3df5d95176",
   "cutDiscovery.js": "26c21acffdbd9bbfdd1fd28604c58ba89dd1a8b9afdcf5bdd0b27f6e597d3902",
   "decision.js": "500865ba0804545831229ec0356575b40b539f3fd13d1198c907ade35d4b453d",
   "decompose.js": "b0401191da4d660061d3d15dbaa0fac0195ab361608659f2a624e7c14939bf09",
@@ -43,12 +46,14 @@
   "offset.js": "c965f6741952a9dd78a60de20c6bd82bcd5090b06934e8a5895c8ccb331e0621",
   "plateReport.js": "c6b603cdf51c2849f6a225d2d5281e6c7fb721a1612ed12729a578140ba54abc",
   "prepare.js": "e6d0315f99471794652c49c53fa018ae0b642dd25f7a3b77a1dbfc9909bc7f2d",
+  "proteinFigure.js": "19edec3e850bbb8e7353f270c3833c199a9b42e604dd2d9123c20c6543b53dc3",
   "pursuit.js": "87f576ce8eeabb861ed1944431dd514857da2d1dd0bc9f1a4325eac6eb942019",
   "quick.js": "aafb2514aa2def9eafbfd9e3b217619715e2d84e80bf3bbfd1eb36ac8ad42c8b",
   "recommend.js": "44103e8c1b7c539431d11bf3b4e351fc7fd3ac04c11271d9a4c6e62c48b953dd",
   "reliability.js": "9282dae369b1bc80d2f1fa8d7f23d0e453ab358e6302cde21713be0ffa541b69",
-  "report.js": "41e71f3639612cd3e09e4641403ba75c52479a0b65fdb64326df40b217943c8e",
+  "report.js": "172c4e6101d56f95819a37ed0eca0ec4fde34d28604cdaa59c9366ffdca950ef",
   "runJobs.js": "297784a0027cc012f7153f8d74c44ed08c8f83b4c8043ea4c853f676ee4e6257",
+  "saveFigure.js": "87464b0ce028dede16b8494b0514432cb471ac3dbce4296c1d0a832e2a8094c5",
   "seq.js": "a4c29906e74d34a253d875278e28d6d22de85154d22ab8d82989218b39e455ff",
   "sheet.js": "8cf4faa682dfe7190224ddd07679bd652b5baccb28353e6d1090b6fb21679646",
   "traceModel.js": "b8bedae65ce5621e1ff4f70df6ee7e4ff4d507ed0310e775d59c1a66993adbf1",

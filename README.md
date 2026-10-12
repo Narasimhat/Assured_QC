@@ -54,7 +54,7 @@ In the browser, add the `.gb` file with the traces. The call is a prediction fro
 
 ## Which clones to carry forward (0.4.0)
 
-`recommend` ranks the clones of a run by how strongly the sequence predicts that no functional protein is left (the knockout support: 85 at best from sequence alone, 100 only with a protein result) and names the best clone of each genotype as the panel to confirm first. The browser shows it as a Priority column; the command line writes `recommendation.csv`. Protein results from a Western blot (`--observations protein.csv`) accept clones whose protein is absent and reject those whose protein is still made. The weights are provisional; see `docs/recommendation.md`.
+`recommend` ranks the clones of a run by how strongly the sequence predicts that no functional protein is left (the knockout support: 85 at best from sequence alone, 100 only with a protein result) and names the best clone of each genotype as the panel to confirm first. The browser shows it as a Priority column; the command line writes `recommendation.csv`. For each sample with a gene record the app also draws the predicted protein products (residues kept, frameshifted tail, NMD, mass) with the stretches where an antibody epitope sees every product or the full-length protein only, to choose the antibody for the Western (`docs/functional-knockout.md`). Protein results from a Western blot (`--observations protein.csv`) accept clones whose protein is absent and reject those whose protein is still made. The weights are provisional; see `docs/recommendation.md`.
 
 ## Accuracy and limits
 
