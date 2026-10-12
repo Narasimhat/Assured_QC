@@ -7,7 +7,7 @@ import { designDir, loadSpec } from "./helpers.js";
 const names = readdirSync(designDir).map((file) => file.replace(".design.json", ""));
 
 test("every exported design validates", () => {
-  assert.equal(names.length, 7);
+  assert.equal(names.length, 8); // seven exported by the design app's earlier hand-off plus the knockout design that carries a coding block
   for (const name of names) {
     const result = validateDesignSpec(loadSpec(name));
     assert.deepEqual(result.errors, [], `${name}: ${result.errors.join("; ")}`);

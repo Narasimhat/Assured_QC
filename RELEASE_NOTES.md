@@ -1,5 +1,16 @@
 # Release notes
 
+## 0.3.0 (preview, in progress)
+
+- Functional knockout assessment (`src/coding.js`, `src/genbank.js`): with a GenBank gene record, each allele is placed in the coding sequence and translated; premature stops are judged by the exon-junction rules for nonsense-mediated decay, truncations by the share of protein kept and essential regions lost, early stops by downstream in-frame ATGs, splice-site edits as exon skipping versus intron retention, plus start loss, stop loss and in-frame changes. A clone call (predicted knockout, with caveats, not a knockout, uncertain), a functional knockout score with interval and a list of confirming experiments (Western blot, RT-qPCR, RT-PCR) are added to the table, report, CSV and decision layer. A knockout is accepted only when the call is a predicted knockout without caveats. The prediction is not calibrated on protein measurements (`docs/functional-knockout.md`).
+- Design file: a design written by the design app for a knockout or deletion carries a `coding` block (gene region and coding exons); the functional assessment then runs without a second GenBank upload (`docs/design-handoff.md`). A gene record given with the traces takes precedence.
+- Pre-cut discordance warning: for knockout and deletion designs it now looks at the 40 bases next to the cut instead of the whole alignment window, so a base-calling shift early in the read no longer warns; designs that read donor markers keep the whole window. Warnings on 160 laboratory clones fall from 46 to 29, estimates are unchanged; the warning did not predict knockout error before or after, and flagged all 3 SNP overcalls (one locus) under both rules (`docs/discordance-warning.md`).
+- Calibration of the functional call: `node cli/assured-qc.mjs calibrate results.json observations.csv` scores the calls against protein (and RNA) results with Wilson intervals, by call and by allele class (`src/calibration.js`, `docs/calibration.md`, template `docs/calibration-template.csv`). No protein data have been used yet; thresholds are unchanged.
+- Marker-level response: investigated on 45 real SNP clones and not added (`docs/marker-response-notes.md`); the effect appears at one locus and the allele fit already absorbs it. Real-data guard unchanged (knockout readout MAE 2.88, 3 SNP overcalls).
+- The earlier knockout score is relabelled the frameshift score (proxy) and is unchanged; without a gene record nothing else changes.
+- Command line: `--genbank`, `--transcript`, `--regions`, `--epitope`; the gene record file name and SHA-256 are written to `run.json`. Start page: optional GenBank file with essential regions and antibody epitope.
+- Tests: 29 added (record parser, strand handling, window location, independent translation check, NMD rules, splice sites, start loss, isoforms, decision, report, command line, design-file coding block, calibration, discordance warning).
+
 ## 0.2.0 (preview)
 
 - Engine: unknown-base insertions to 10 bp; adaptive search for large deletions (31-250 bp, either cut or spanning), donor edit carrying an indel as its own allele; gated unpenalised refit and background baseline (only when the fit is good); joint fit of forward and reverse reads with a per-read agreement flag.

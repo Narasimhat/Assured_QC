@@ -6,7 +6,7 @@ import { analyseJunctionRead, classifyBands } from "./junction.js";
 import { contributionsSvg, discordanceSvg } from "./charts.js";
 import { baseEditMarkers, baseEditTable } from "./baseEdit.js";
 import { discoverCut } from "./cutDiscovery.js";
-import { buildCodingContext, describeContext } from "./coding.js";
+import { buildCodingContext, describeContext, codingBlockToGenBank } from "./coding.js";
 
 export const WORKFLOWS = {
   knockout: { label: "Knockout (indels at one cut)", needsDonor: false, method: "trace" },
@@ -59,13 +59,20 @@ export function codingFor(input, spec) {
 
 export function planDesign(input) {
   const plan = planDesignCore(input);
-  if (plan.error || !input.genbank) return plan;
-  const o = input.codingOptions || {}; const codingInput = { genbank: input.genbank, gene: o.gene || "", transcript: o.transcript || "", regions: o.regions || [], epitope: o.epitope || null };
+  if (plan.error) return plan;
+  // A gene record given with the traces wins; otherwise the coding block of the design file is used (knockout and deletion designs, where the functional assessment applies).
+  let genbank = input.genbank || ""; let fromDesign = false; const block = input.designSpec && input.designSpec.coding;
+  if (!genbank && block && ["knockout", "deletion"].includes(plan.spec?.design?.editKind)) {
+    const total = (block.segments || []).reduce((sum, pair) => sum + (pair[1] - pair[0]), 0);
+    if (block.sequence && total > 0 && total % 3 === 0) { genbank = codingBlockToGenBank(block); fromDesign = true; }
+  }
+  if (!genbank) return plan;
+  const o = input.codingOptions || {}; const codingInput = { genbank, gene: o.gene || "", transcript: o.transcript || "", regions: o.regions || [], epitope: o.epitope || null };
   const got = codingFor(codingInput, plan.spec); const warnings = [...(plan.warnings || [])];
   if (!got.ok) { warnings.push(`Functional knockout assessment is off: ${got.error}`); return { ...plan, warnings, codingInput: null, coding: null }; }
   const m = got.context.models[0];
-  warnings.push(`Coding context: ${m.id}, ${m.protLen} residues in ${m.segs.length} coding exon${m.segs.length === 1 ? "" : "s"} (${got.context.models.length} annotated coding isoform${got.context.models.length === 1 ? "" : "s"}; the longest is used). The design's reference matches the record at ${Math.round(got.context.location.identity * 1000) / 10}%.`, ...got.context.warnings);
-  return { ...plan, warnings, codingInput, coding: describeContext(got.context) };
+  warnings.push(`Coding context${fromDesign ? " (from the design file)" : ""}: ${m.id}, ${m.protLen} residues in ${m.segs.length} coding exon${m.segs.length === 1 ? "" : "s"} (${got.context.models.length} annotated coding isoform${got.context.models.length === 1 ? "" : "s"}; the longest is used). The design's reference matches the record at ${Math.round(got.context.location.identity * 1000) / 10}%.`, ...got.context.warnings);
+  return { ...plan, warnings, codingInput, coding: describeContext(got.context), codingSource: fromDesign ? "design file" : "gene record" };
 }
 
 const round = (value, digits = 3) => (value === null || value === undefined || Number.isNaN(value) ? null : Math.round(value * 10 ** digits) / 10 ** digits);
@@ -91,7 +98,7 @@ export function analyseSample({ name, spec, control, edited, extraReads = [], sa
     functional: result.functional ? compactFunction(result.functional) : null,
     baseEdits: spec.baseEditor ? { editor: spec.baseEditor.editor, window: spec.baseEditor.window, target: spec.baseEditor.target, positions: baseEditTable(result.prepared, result.markerReadout, result.quality.upstreamRms, options.baseEdit || {}) } : null,
     markers: result.markerReadout.map((row) => ({ position: row.marker.pos, change: `${row.marker.ref}>${row.marker.alt}`, role: row.marker.role, label: row.marker.label || "", covered: row.covered, reason: row.reason || "", altEdited: round(row.altEdited), altControl: round(row.altControl), altNet: round(row.altNet) })),
-    quality: { upstreamRms: round(result.quality.upstreamRms, 4), upstreamBackground: round(result.quality.upstreamBackground, 4), r2: round(decomposition.r2), noiseFraction: round(decomposition.noiseFraction), rawSum: round(decomposition.rawSum), windowLength: decomposition.windowLength, positionsUsed: decomposition.positionsUsed, candidates: decomposition.candidates, columns: decomposition.columns, discordanceBefore: round(result.quality.discordanceBefore), discordanceAfter: round(result.quality.discordanceAfter), patches: result.prepared.patches.length },
+    quality: { upstreamRms: round(result.quality.upstreamRms, 4), upstreamBackground: round(result.quality.upstreamBackground, 4), r2: round(decomposition.r2), noiseFraction: round(decomposition.noiseFraction), rawSum: round(decomposition.rawSum), windowLength: decomposition.windowLength, positionsUsed: decomposition.positionsUsed, candidates: decomposition.candidates, columns: decomposition.columns, discordanceBefore: round(result.quality.discordanceBefore), discordanceNearCut: round(result.quality.discordanceNearCut), discordanceAfter: round(result.quality.discordanceAfter), patches: result.prepared.patches.length },
     charts: { contributions: contributionsSvg(decomposition.contributions), discordance: discordanceSvg(result.prepared) },
   };
 }

@@ -3,32 +3,16 @@ import assert from "node:assert/strict";
 import { mkdtempSync, copyFileSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { main as cli } from "../cli/assured-qc.mjs";
-import { translate } from "../src/coding.js";
+import { validateDesignSpec } from "../src/designSpec.js";
+import { planDesign } from "../src/batch.js";
+import { spec, gb, geneGenomic, codingSegments, windowStartInGene, designRoot as root } from "./helpers/synthetic-gene.js";
 
-const here = path.dirname(fileURLToPath(import.meta.url)); const root = path.join(here, "..");
-const spec = JSON.parse(readFileSync(path.join(root, "fixtures", "design", "nr2f2_2xha_ssodn.design.json"), "utf8")); const ref = spec.reference.sequence; const cut = spec.guides[0].cut;
-let seed = 5; const rnd = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
-const B = "ACGT"; const dna = (n) => Array.from({ length: n }, () => B[Math.floor(rnd() * 4)]).join("");
-const CODONS = []; for (const a of B) for (const b of B) for (const c of B) if (!["TAA", "TAG", "TGA", "ATG"].includes(a + b + c)) CODONS.push(a + b + c);
-const codons = (n) => Array.from({ length: n }, () => CODONS[Math.floor(rnd() * CODONS.length)]).join("");
-const isStop = (c) => c === "TAA" || c === "TAG" || c === "TGA";
-let a = 0; let len = 0;
-for (let f = 0; f < 3; f += 1) { let p0 = cut - 3 - ((cut - 3 - f) % 3); while (p0 >= 0 && !isStop(ref.slice(p0, p0 + 3))) p0 -= 3; let p1 = p0 + 3; while (p1 + 3 <= ref.length && !isStop(ref.slice(p1, p1 + 3))) p1 += 3; if (p0 >= 0 && p1 - p0 - 3 > len && p0 + 3 < cut - 6 && p1 > cut + 6) { a = p0 + 3; len = p1 - p0 - 3; } }
-const exon1 = "ATG" + codons(70);
-const a2 = a + 3 * Math.floor(Math.max(0, cut - a - 90) / 3); const L2 = Math.floor((a + len - a2) / 3) * 3; const exon2 = ref.slice(a2, a2 + L2);
-// a middle exon of random codons, drawn until a 1-nt deletion at the cut puts the stop more than 60 nt upstream of its junction (NMD expected)
-const k = cut - a2; const e2del = exon2.slice(0, k - 1) + exon2.slice(k); let exon3 = ""; let tries = 0;
-for (; tries < 200; tries += 1) { exon3 = codons(70); const stop = translate(exon1 + e2del + exon3).stopNt; if (stop > exon1.length + e2del.length && stop < exon1.length + e2del.length + exon3.length - 60) break; }
-assert.ok(tries < 200, "found a middle exon");
-const exon4 = codons(10) + "TAA"; const up = dna(200); const i1 = "GT" + dna(120) + "AG"; const i2 = "GT" + dna(120) + "AG"; const i3 = "GT" + dna(120) + "AG";
-const pre = ref.slice(0, a2); const post = ref.slice(a2 + L2);
-const genomic = up + exon1 + i1 + pre + exon2 + post + i2 + exon3 + i3 + exon4 + dna(200);
-const e2s = up.length + exon1.length + i1.length + a2; const e3s = up.length + exon1.length + i1.length + ref.length + i2.length; const e4s = e3s + exon3.length + i3.length;
-const gb = ["LOCUS       SYN3   " + genomic.length + " bp", "ACCESSION   NG_SYN3", "FEATURES             Location/Qualifiers", `     CDS             join(${up.length + 1}..${up.length + exon1.length},${e2s + 1}..${e2s + L2},${e3s + 1}..${e3s + exon3.length},${e4s + 1}..${e4s + exon4.length})`, '                     /gene="NR2F2"', '                     /transcript_id="NM_SYN3.1"', "ORIGIN",
-  ...Array.from({ length: Math.ceil(genomic.length / 60) }, (_, i) => String(i * 60 + 1).padStart(9) + " " + genomic.slice(i * 60, i * 60 + 60).toLowerCase()), "//"].join("\n");
 const sim = (n) => path.join(root, "fixtures", "sim", n);
+const REF_OFFSET = 1000;
+// the design file as the design app writes it for a two-guide knockout: the reference window plus the gene region and its coding segments
+const koSpec = () => ({ ...JSON.parse(JSON.stringify(spec)), design: { ...spec.design, editKind: "deletion" }, reference: { ...spec.reference, offset: REF_OFFSET },
+  coding: { strand: "+", gene: "NR2F2", transcript: "NM_SYN3.1", offset: REF_OFFSET - windowStartInGene, sequence: geneGenomic, segments: codingSegments } });
 
 test("command line: --genbank adds a functional knockout assessment to the table, the report and the provenance", async () => {
   const dir = mkdtempSync(path.join(tmpdir(), "qc-gene-"));
@@ -44,5 +28,48 @@ test("command line: --genbank adds a functional knockout assessment to the table
   const csv = readFileSync(path.join(out, "results.csv"), "utf8"); assert.match(csv.split("\n")[0], /functional_ko_pct/);
   const run = JSON.parse(readFileSync(path.join(out, "run.json"), "utf8")); assert.ok(run.geneRecord && /^[0-9a-f]{64}$/.test(run.geneRecord.sha256));
   assert.match(readFileSync(path.join(out, "report.html"), "utf8"), /Functional knockout assessment/);
-  assert.ok(translate(exon1 + exon2 + exon3 + exon4).stopNt === (exon1 + exon2 + exon3 + exon4).length - 3, "the synthetic gene is a clean open reading frame");
+});
+
+test("design file: the coding block is checked against the reference window and the segments", () => {
+  assert.equal(validateDesignSpec(koSpec()).ok, true, JSON.stringify(validateDesignSpec(koSpec()).errors));
+  const shifted = koSpec(); shifted.coding.offset += 1; assert.match(validateDesignSpec(shifted).errors.join(" "), /does not contain the reference window/);
+  const overlap = koSpec(); overlap.coding.segments = [[10, 40], [30, 60]]; assert.match(validateDesignSpec(overlap).errors.join(" "), /in order and must not overlap/);
+  const odd = koSpec(); odd.coding.segments = [[10, 41]]; assert.ok(validateDesignSpec(odd).warnings.some((w) => /not a multiple of three/.test(w)));
+  const none = koSpec(); delete none.coding; assert.equal(validateDesignSpec(none).ok, true, "the block is optional");
+});
+
+test("design file: planDesign uses the coding block for knockout and deletion designs only", () => {
+  const trace = null; // planDesign with a design spec does not read the trace
+  const plan = planDesign({ designSpec: koSpec(), control: trace, guides: [], donor: "", gene: "x", nuclease: "SpCas9" });
+  assert.ok(!plan.error, plan.error); assert.ok(plan.codingInput, "coding context built from the design file"); assert.equal(plan.codingSource, "design file"); assert.ok(plan.warnings.some((w) => /from the design file/.test(w)));
+  const snp = koSpec(); snp.design.editKind = "snp"; assert.equal(planDesign({ designSpec: snp, control: trace, guides: [], donor: "", gene: "x", nuclease: "SpCas9" }).codingInput || null, null);
+  const withRecord = planDesign({ designSpec: koSpec(), control: trace, guides: [], donor: "", gene: "x", nuclease: "SpCas9", genbank: gb }); assert.equal(withRecord.codingSource, "gene record", "an uploaded record wins over the design file");
+});
+
+test("command line: a design file with a coding block gives the functional assessment without a gene record", async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "qc-design-coding-"));
+  copyFileSync(sim("nr2f2_control.ab1"), path.join(dir, "NR2F2_WT.700.ab1")); copyFileSync(sim("nr2f2_ko_clone_hom_m1_edited.ab1"), path.join(dir, "NR2F2_A01_hom.700.ab1"));
+  const designPath = path.join(dir, "design.json"); writeFileSync(designPath, JSON.stringify(koSpec())); const out = path.join(dir, "out");
+  assert.equal(await cli(["run", dir, "--design", designPath, "--workflow", "knockout", "--threads", "1", "--out", out]), 0);
+  const results = JSON.parse(readFileSync(path.join(out, "results.json"), "utf8")); assert.equal(results.length, 1);
+  assert.ok(results[0].functional, "functional assessment from the design file"); assert.equal(results[0].functional.call.status, "predicted_knockout");
+  const run = JSON.parse(readFileSync(path.join(out, "run.json"), "utf8")); assert.equal(run.geneRecord.file, "coding block of the design file"); assert.match(run.geneRecord.sha256, /^[0-9a-f]{64}$/);
+});
+
+test("design file written by the design app (with a coding block) is accepted and gives a coding context", () => {
+  const fromApp = JSON.parse(readFileSync(path.join(root, "fixtures", "design", "tagme_ko_deletion_coding.design.json"), "utf8"));
+  assert.equal(validateDesignSpec(fromApp).ok, true);
+  const plan = planDesign({ designSpec: fromApp, control: null, guides: [], donor: "", gene: "x", nuclease: "SpCas9" });
+  assert.equal(plan.codingSource, "design file"); assert.equal(plan.coding.codingExons, 2); assert.equal(plan.coding.proteinLength, 399);
+});
+
+test("command line: calibrate scores the functional calls of a run against a protein table", async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "qc-calibrate-"));
+  copyFileSync(sim("nr2f2_control.ab1"), path.join(dir, "NR2F2_WT.700.ab1")); copyFileSync(sim("nr2f2_ko_clone_hom_m1_edited.ab1"), path.join(dir, "NR2F2_A01_hom.700.ab1")); copyFileSync(sim("nr2f2_ko_clone_het_wt_m1_edited.ab1"), path.join(dir, "NR2F2_A02_het.700.ab1"));
+  const designPath = path.join(dir, "design.json"); writeFileSync(designPath, JSON.stringify(koSpec())); const out = path.join(dir, "out");
+  assert.equal(await cli(["run", dir, "--design", designPath, "--workflow", "knockout", "--threads", "1", "--out", out]), 0);
+  const obs = path.join(dir, "obs.csv"); writeFileSync(obs, "sample,protein,rna\nNR2F2_A01_hom.700,absent,decayed\nNR2F2_A02_het.700,present,\n");
+  const report = path.join(dir, "calibration.md"); assert.equal(await cli(["calibrate", path.join(out, "results.json"), obs, "--out", report]), 0);
+  const text = readFileSync(report, "utf8"); assert.match(text, /2 clones with a protein result/); assert.match(text, /predicted_knockout/);
+  const parsed = JSON.parse(readFileSync(path.join(dir, "calibration.json"), "utf8")); assert.equal(parsed.knockoutCall.called, 1); assert.equal(parsed.knockoutCall.confirmed, 1);
 });

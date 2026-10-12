@@ -1,0 +1,4 @@
+sample,protein,rna,splicing,notes
+clone_A01,absent,decayed,,Western: N-terminal antibody
+clone_A02,present,stable,,
+clone_A03,truncated,,exon skipped,smaller band

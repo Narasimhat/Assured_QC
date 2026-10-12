@@ -15,6 +15,8 @@ A GenBank record that contains the edited region and a coding sequence (CDS) fea
 - Browser: choose the `.gb` file together with the other files (or in the options of the start page); regions and epitope are optional fields.
 - API: `planDesign({ ..., genbank, codingOptions: { gene, transcript, regions, epitope } })`, then `analysePair` with `options.coding`.
 
+- Design file: a design written by the Assured design app for a knockout or deletion carries the gene region and coding exons in its `coding` block (`docs/design-handoff.md`); no second upload is needed. A gene record given with the traces takes precedence.
+
 The window that the traces cover (the design reference) is located in the record by k-mer seeds on either strand (identity of at least 0.9 required); if it is not found, or the record has no CDS, the functional score is omitted and the report says why, while the frameshift score is unchanged.
 
 ## What is computed for each allele
@@ -52,7 +54,7 @@ Alleles below 5% of the explained signal are not part of the call. The call is o
 
 The score is the share of the explained signal in each class (`functionalKoPct`, `functionalUncertainPct`), with the same profile-likelihood intervals as the other summaries.
 
-In the decision layer a knockout is accepted only for `predicted_knockout`; `predicted_knockout_with_caveats` and `uncertain` are held; `not_knockout` is rejected. Every call lists what to run to confirm it: Western blot or mass spectrometry with an antibody or peptide outside the edited region, RT-qPCR downstream of the stop for NMD, N- and C-terminal antibodies for truncations, RT-PCR across the flanking exons for splice-site edits, and a functional assay for in-frame changes.
+In the decision layer a knockout is accepted only for `predicted_knockout`; every other functional call (`predicted_knockout_with_caveats`, `uncertain`, `not_knockout`, `unclear`) is held for a decision by hand. A clone is rejected only by the earlier wild-type rule (wild type is the major allele, 50% or more, or the genotype is homozygous wild type), not by the functional call. Every call lists what to run to confirm it: Western blot or mass spectrometry with an antibody or peptide outside the edited region, RT-qPCR downstream of the stop for NMD, N- and C-terminal antibodies for truncations, RT-PCR across the flanking exons for splice-site edits, and a functional assay for in-frame changes.
 
 ## Known limits
 

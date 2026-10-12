@@ -25,6 +25,24 @@ that starts at `reference.offset`. A cut index `c` means the cut lies between ba
 position, cut not 3 bp from the PAM, marker base not the reference base, a donor difference that no marker
 declares, primers not on the window, amplicon sizes that do not follow from the primers.
 
+## Coding block (optional)
+
+For knockout and two-guide deletion designs the design app also writes a `coding` object, so the QC app can judge the knockout on the protein
+without a second upload (`docs/functional-knockout.md`):
+
+| Field | Meaning |
+|---|---|
+| `strand` | `"+"`: the design app takes the uploaded record as the coding strand |
+| `offset` | position of `sequence` in the uploaded reference (same coordinates as `reference.offset`) |
+| `sequence` | the gene region: the coding exons with their introns, extended to cover the reference window |
+| `segments` | the coding exons as 0-based, half-open `[start, end)` pairs inside `sequence`, in order |
+| `gene`, `transcript`, `proteinLength` | names from the record |
+
+The validator checks that `reference.sequence` equals `coding.sequence` at `reference.offset - coding.offset` (an error otherwise), that the segments are
+ordered, non-overlapping and inside the sequence, and warns when their total is not a multiple of three. The block is left out when the record has no complete
+CDS or the region exceeds 300 kb. A gene record given on the command line (`--genbank`) or in the app takes precedence over the block; SNP, tag and reporter
+designs carry the block but the knock-out assessment is not applied to them.
+
 ## Expected alleles
 
 `buildExpectedAlleles(spec)` returns every sequence a pool or clone can plausibly carry, each with the full

@@ -412,3 +412,22 @@ export function parseCodingFields({ regionsText = "", epitopeText = "", gene = "
   let epitope = null; if (String(epitopeText || "").trim()) { epitope = range(epitopeText); if (!epitope) problems.push(`Epitope not understood: "${epitopeText}" (write start-end, residue numbers)`); }
   return { options: { gene, transcript, regions, epitope }, problems };
 }
+
+/**
+ * The `coding` block of a design file (written by the design app): the gene region of the uploaded record, the coding segments on it and
+ * the transcript names. It is turned into GenBank text so that every later step (cache key, provenance hash, worker threads) treats it like an uploaded record.
+ * Coordinates are 0-based half-open indices into block.sequence; the segments are on block.strand (the coding strand, "+" for the design app).
+ */
+export function codingBlockToGenBank(block) {
+  const seq = String(block.sequence || "").toLowerCase(); const strand = block.strand === "-" ? "-" : "+";
+  const L = seq.length; const segs = (block.segments || []).map(([s, e]) => [s, e]);
+  const parts = strand === "+" ? segs.map(([s, e]) => `${s + 1}..${e}`) : segs.map(([s, e]) => `${s + 1}..${e}`).reverse();
+  const join = parts.length > 1 ? `join(${parts.join(",")})` : parts[0];
+  const loc = strand === "+" ? join : `complement(${join})`;
+  const lines = [`LOCUS       ${(block.accession || "DESIGN_REGION").replace(/\s+/g, "_")}   ${L} bp    DNA     linear   UNK`, "DEFINITION  gene region carried in the design file.", `ACCESSION   ${block.accession || "DESIGN_REGION"}`, "FEATURES             Location/Qualifiers", `     CDS             ${loc}`];
+  if (block.gene) lines.push(`                     /gene="${block.gene}"`);
+  if (block.transcript) lines.push(`                     /transcript_id="${block.transcript}"`);
+  lines.push("ORIGIN");
+  for (let i = 0; i < L; i += 60) lines.push(String(i + 1).padStart(9) + " " + seq.slice(i, i + 60).replace(/(.{10})/g, "$1 ").trimEnd());
+  lines.push("//"); return lines.join("\n");
+}

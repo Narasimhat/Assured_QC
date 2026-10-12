@@ -76,6 +76,27 @@ export function readMarkers(prepared) {
 // Pre-cut discordance seen on the ICE example traces was 0.03-0.17 (fractions agreed with ICE); synthetic traces with
 // noise at 40% of the peak height reached 0.30 and then misread the mixture. Provisional, to be refined on laboratory traces.
 export const NOISY_DISCORDANCE = 0.25;
+export const NEAR_CUT_BASES = 40;
+// The stretch of the read where the control must match the edited trace for the result to be trusted: NEAR_CUT_BASES before the first cut, or further
+// upstream when a marker (a base the donor changes) is read there.
+function relevantStart(prepared, markerRows) {
+  const markerIdx = (markerRows || []).filter((m) => m.covered && Number.isInteger(m.readIndex)).map((m) => m.readIndex);
+  const from = Math.min(prepared.firstCut - NEAR_CUT_BASES, ...(markerIdx.length ? [Math.min(...markerIdx) - 10] : []));
+  return Math.max(prepared.alignmentWindow.start, from);
+}
+
+
+/**
+ * Whether the control and edited traces differ before the cut enough to warn. A knockout or deletion is read from the cut and what lies after it, so only the stretch next
+ * to the cut counts: a base-calling shift or a primer-site difference early in the read (where the cut region still matches) is not a reason to distrust it. A design that reads donor
+ * markers keeps the whole alignment window, because the bases it reads can sit anywhere in it. On 160 laboratory clones (docs/discordance-warning.md) the whole-window rule did not
+ * predict knockout error (AUC 0.49) and fired on 57% of knockout clones, but it did flag all three donor-base overcalls of the SNP sets.
+ */
+export function discordanceWarns(quality, hasMarkers) {
+  const near = quality.discordanceNearCut;
+  if (!hasMarkers && Number.isFinite(near)) return near > NOISY_DISCORDANCE;
+  return quality.discordanceBefore > NOISY_DISCORDANCE || (Number.isFinite(near) && near > NOISY_DISCORDANCE);
+}
 
 export function unexplainedBaselineFor(decomposition, background, options = {}) {
   const goodFit = decomposition.r2 !== null && decomposition.r2 >= (options.adaptiveMinR2 ?? 0.9);
@@ -112,8 +133,9 @@ export function analysePair({ control, edited, spec, options = {} }) {
   if (Math.abs(decomposition.rawSum - 1) > 0.15) warnings.push(`The fitted abundances sum to ${decomposition.rawSum.toFixed(2)} rather than 1, which indicates a poor fit.`);
   if (summary.unexplainedPct >= 15) warnings.push(`${summary.unexplainedPct}% of the signal after the cut is not explained by any allele in the library (a complex mixture, large deletions or noise). It is counted as not wild type; the wild-type share is reliable, but the split among the edited alleles, the KO score and the intended-edit share cover only the explained part.`);
   const noiseUp = upstreamNoise(prepared);
-  const quality = { upstreamRms: Math.sqrt(noiseUp), upstreamBackground: background, unexplainedBaseline: baseline, discordanceBefore: meanDiscordance(prepared, prepared.alignmentWindow.start, prepared.alignmentWindow.end), discordanceAfter: meanDiscordance(prepared, prepared.lastCut, prepared.window.end) };
-  if (quality.discordanceBefore > NOISY_DISCORDANCE) warnings.push(`The control and edited traces already differ before the cut (mean discordance ${quality.discordanceBefore.toFixed(2)}): one of them is noisy or comes from a different template. Treat the fractions as unreliable and consider re-sequencing.`);
+  const quality = { upstreamRms: Math.sqrt(noiseUp), upstreamBackground: background, unexplainedBaseline: baseline, discordanceBefore: meanDiscordance(prepared, prepared.alignmentWindow.start, prepared.alignmentWindow.end), discordanceNearCut: meanDiscordance(prepared, relevantStart(prepared, readMarkers(prepared)), prepared.firstCut), discordanceAfter: meanDiscordance(prepared, prepared.lastCut, prepared.window.end) };
+  const hasMarkers = (prepared.spec.markers || []).length > 0;
+  if (discordanceWarns(quality, hasMarkers)) warnings.push(`The control and edited traces already differ before the cut (mean discordance ${quality.discordanceBefore.toFixed(2)}${quality.discordanceNearCut !== undefined ? `, ${quality.discordanceNearCut.toFixed(2)} in the stretch next to the cut` : ""}): one of them is noisy or comes from a different template. Treat the fractions as unreliable and consider re-sequencing.`);
   const markerReadout = readMarkers(prepared);
   const genotype = options.sampleType === "clone" ? callGenotype(decomposition, options.genotype || {}) : null;
   return {

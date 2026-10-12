@@ -1,7 +1,7 @@
 // Misuse and failure cases: what the engine must refuse, warn about, or leave at zero.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { analysePair, NOISY_DISCORDANCE } from "../src/analyze.js";
+import { analysePair, NOISY_DISCORDANCE, discordanceWarns } from "../src/analyze.js";
 import { runJobs } from "../src/runJobs.js";
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -65,4 +65,12 @@ test("a damaged file in a batch is reported by name and the other samples are st
   assert.match(out.results[0].error, /Could not read bad\.ab1/);
   assert.equal(out.results[1].ok, true);
   assert.ok(out.results[1].summary.editedPct > 60);
+});
+
+test("the discordance warning reads the stretch next to the cut for knockouts and the whole window when donor markers are read", () => {
+  const early = { discordanceBefore: 0.5, discordanceNearCut: 0.02 }; const near = { discordanceBefore: 0.5, discordanceNearCut: 0.4 }; const clean = { discordanceBefore: 0.02, discordanceNearCut: 0.01 };
+  assert.equal(discordanceWarns(early, false), false, "early-read mismatch only: no warning for a knockout or deletion");
+  assert.equal(discordanceWarns(early, true), true, "the same mismatch warns when markers are read");
+  assert.equal(discordanceWarns(near, false), true); assert.equal(discordanceWarns(near, true), true); assert.equal(discordanceWarns(clean, false) || discordanceWarns(clean, true), false);
+  assert.equal(discordanceWarns({ discordanceBefore: 0.5 }, false), true, "without the near-cut figure the old rule applies");
 });
