@@ -1,8 +1,9 @@
 // Self-contained HTML report and CSV for a batch of analysed samples.
 import { WORKFLOWS, headline } from "./batch.js";
 import { cloneProteinFigure } from "./proteinFigure.js";
+import { runSummaryFigure } from "./summaryFigure.js";
 
-export const QC_VERSION = "0.4.0";
+export const QC_VERSION = "0.4.1";
 const esc = (value) => String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const pct = (value) => (value === null || value === undefined ? "n/a" : `${(value * 100).toFixed(1)}%`);
 
@@ -72,7 +73,7 @@ export function buildQcReportHtml({ title = "Sanger QC report", workflow, design
 <p class="muted">${esc(flow)}${design ? ` &middot; ${esc(design)}` : ""} &middot; ${results.length} sample${results.length === 1 ? "" : "s"} &middot; generated ${esc(generatedAt.toISOString().slice(0, 10))} by Assured QC ${QC_VERSION}</p>
 <div class="note"><b>Review required.</b> These are computed estimates from Sanger traces. Check the traces and the points flagged below before accepting a clone or releasing a line.</div>
 ${notes.map((n) => `<p>${esc(n)}</p>`).join("")}
-<h2>Summary</h2><table><tr><th>Sample</th><th>Decision</th><th>Result</th><th>Notes</th></tr>${rows}</table>
+<h2>Summary</h2>${(() => { const fig = runSummaryFigure(results, { title: "Run summary" }); return fig ? `<div style="overflow-x:auto">${fig}</div>` : ""; })()}<table><tr><th>Sample</th><th>Decision</th><th>Result</th><th>Notes</th></tr>${rows}</table>
 <h2>Samples</h2>${results.map((r) => sampleSection(workflow, r)).join("")}
 <h2>Method and limits</h2><ul>${METHOD.map((m) => `<li>${esc(m)}</li>`).join("")}</ul>
 </body></html>`;

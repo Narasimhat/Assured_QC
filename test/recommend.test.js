@@ -122,6 +122,8 @@ test("command line: run ranks the clones and writes recommendation.csv; recommen
   try {
     assert.equal(await cli(["run", dir, "--design", path.join(root, "fixtures", "design", "apoe_r176c_snp.design.json"), "--threads", "2", "--out", out]), 0);
     assert.ok(existsSync(path.join(out, "recommendation.csv")));
+    const summary = readFileSync(path.join(out, "summary.svg"), "utf8"); assert.match(summary, /^<svg /); assert.match(summary, /apoe_A01_hom\.700/); assert.match(summary, /#1 carry forward/);
+    assert.match(readFileSync(path.join(out, "report.html"), "utf8"), /<h2>Summary<\/h2><div style="overflow-x:auto"><svg /);
     const results = JSON.parse(readFileSync(path.join(out, "results.json"), "utf8")); assert.ok(results.every((r) => r.recommendation && r.recommendation.priority !== undefined));
     const by = Object.fromEntries(results.map((r) => [r.name, r])); assert.equal(by["apoe_A01_hom.700"].recommendation.rank, 1); assert.ok(by["apoe_A02_het.700"].recommendation.rank > 1);
     assert.match(logged.join("\n"), /Take forward first: apoe_A01_hom\.700/);

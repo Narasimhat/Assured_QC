@@ -40,6 +40,10 @@ node cli/assured-qc.mjs recommend out/results.json [--observations protein.csv] 
 
 The browser shows the same ranking: a Priority column, the support and the reasons for the selected clone, and a download of the recommendation table.
 
+## Run summary graph
+
+`src/summaryFigure.js` draws a run on one graph, one row per sample in the order to act on them (ranked clones first): the decision (letter and colour, as in the plate view), what the clone is made of (a stacked bar of the alleles with their length changes and shares of the signal, and the signal no allele explains), the edited share (or the intended edit) with its 95% interval, the knockout support, and the plan. A `!` marks low trace quality or low confidence; hover text carries the full name and the reasons. It is shown above the table in the browser (SVG and 300 dpi PNG downloads), at the top of the HTML report, and written as `summary.svg` by `run`. Rows shrink for runs of more than 30 and 80 samples.
+
 ## Protein results
 
 `--observations protein.csv` (the file that `calibrate` reads: `sample`, `protein` = absent / reduced / present / truncated, optional `rna`, `notes`) is applied to knockout and deletion samples only.
