@@ -1,5 +1,11 @@
 # Release notes
 
+## 0.3.1 (2026-10-12)
+
+- Functional knockout assessment: a GenBank record that also carries a neighbouring gene (common for genomic records) no longer lets that gene's coding sequence be taken as the protein. Only the coding sequences of the gene the design's reference window lies in are modelled; the others are listed in a warning (`src/coding.js`). Before, the longest CDS of the record was the primary protein, so a neighbour with a longer CDS would have been assessed instead. A record whose window lies in no gene is unchanged. Designs that carry the coding block of the design file were not affected (the block holds one gene). Estimates, intervals and decisions without a gene record are unchanged.
+- The warning for a partial CDS in the record now names the gene instead of an index.
+- `QC_VERSION` and `package.json` read 0.3.1.
+
 ## 0.3.0 (2026-10-12)
 
 - Engine: the read offset is re-anchored in the 20 bases before the cut when the two reads' base calls have drifted apart since the upstream alignment stretch (`src/offset.js`, option `refineOffset`). Fixes sizes that were one base out on a control read with extra base calls; never changes a pair whose offset already fits.

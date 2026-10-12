@@ -1,7 +1,7 @@
 // Self-contained HTML report and CSV for a batch of analysed samples.
 import { WORKFLOWS, headline } from "./batch.js";
 
-export const QC_VERSION = "0.3.0";
+export const QC_VERSION = "0.3.1";
 const esc = (value) => String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const pct = (value) => (value === null || value === undefined ? "n/a" : `${(value * 100).toFixed(1)}%`);
 

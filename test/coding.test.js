@@ -131,3 +131,18 @@ test("a deletion that can be written two ways is not called a splice-site loss w
   let m = 0; for (let k = 2; k < 30; k += 1) if (w[donor - k] !== w[donor] && w[donor - k + 1] !== w[donor + 1] && w[donor - k] !== w[donor + 1]) { m = k; break; }
   const hit = assessAllele(ctx, allele(w, donor - m + 1, donor + 1)); assert.ok(["lof_splice", "splice_uncertain"].includes(hit.class), hit.class);
 });
+
+test("a record that also carries a neighbouring gene: only the gene the reference window lies in is modelled", () => {
+  const w = genomic.slice(start[1] + 20, start[1] + 140);
+  // a longer neighbouring gene on each strand, appended after the design's gene
+  const neighbour = "ATG" + Array.from({ length: 400 }, () => CODONS[Math.floor(rnd() * CODONS.length)]).join("") + "TAA";
+  const pad = randomDna(200); const seq = genomic + pad + neighbour + randomDna(200); const s0 = genomic.length + pad.length;
+  const rec = (strand) => genBank(seq, [{ type: "CDS", loc: joinText, q: { gene: "SYN", transcript_id: "NM_SYN1.1" } }, { type: "CDS", loc: strand === "+" ? `${s0 + 1}..${s0 + neighbour.length}` : `complement(${s0 + 1}..${s0 + neighbour.length})`, q: { gene: "OTHER", transcript_id: "NM_OTHER.1" } }]);
+  for (const strand of ["+", "-"]) {
+    const built = buildCodingContext(rec(strand), { reference: w }); assert.ok(built.ok, built.error);
+    assert.equal(built.context.models.length, 1, `the ${strand}-strand neighbour is left out`); assert.equal(built.context.models[0].gene, "SYN"); assert.ok(built.context.warnings.some((x) => /other genes/.test(x)));
+    assert.equal(built.context.models[0].protLen, 169);
+  }
+  // a window that lies in no gene keeps every coding sequence
+  const outside = buildCodingContext(rec("+"), { reference: genomic.slice(0, 120) }); assert.ok(outside.ok); assert.ok(outside.context.models.length >= 1);
+});
