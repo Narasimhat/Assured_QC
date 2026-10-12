@@ -1,6 +1,6 @@
 # Release notes
 
-## 0.3.0 (preview)
+## 0.3.0 (2026-10-12)
 
 - Engine: the read offset is re-anchored in the 20 bases before the cut when the two reads' base calls have drifted apart since the upstream alignment stretch (`src/offset.js`, option `refineOffset`). Fixes sizes that were one base out on a control read with extra base calls; never changes a pair whose offset already fits.
 - Engine: unplanned base changes (a second base the design does not predict) are named with position and base (`src/unplanned.js`, option `unplanned`); results carry `unplanned`, a warning and a CSV column; an otherwise accepted clone is held (`holdOnUnplanned: false` to turn off).
@@ -12,6 +12,7 @@
 - Pre-cut discordance warning: for knockout and deletion designs it now looks at the 40 bases next to the cut instead of the whole alignment window, so a base-calling shift early in the read no longer warns; designs that read donor markers keep the whole window. Warnings on 160 laboratory clones fall from 46 to 29, estimates are unchanged; the warning did not predict knockout error before or after, and flagged all 3 SNP overcalls (one locus) under both rules (`docs/discordance-warning.md`).
 - Calibration of the functional call: `node cli/assured-qc.mjs calibrate results.json observations.csv` scores the calls against protein (and RNA) results with Wilson intervals, by call and by allele class (`src/calibration.js`, `docs/calibration.md`, template `docs/calibration-template.csv`). No protein data have been used yet; thresholds are unchanged.
 - Marker-level response: investigated on 45 real SNP clones and not added (`docs/marker-response-notes.md`); the effect appears at one locus and the allele fit already absorbs it. Real-data guard unchanged (knockout readout MAE 2.88, 3 SNP overcalls).
+- Final freeze: `bench/ENGINE_FREEZE_0.3.0_final.json` (engine file hashes, scorer hash, test count). On a fresh seed (20261220, 351 simulated traces) the engine merged on 2026-10-12 and the engine frozen on 2026-10-09 give identical output for every trace (edited share, intended edit, knockout score, genotype), so the scorecard is the same for both (`docs/changes-0.3.0.md`). `QC_VERSION` is now 0.3.0 (it read 0.1.0).
 - The earlier knockout score is relabelled the frameshift score (proxy) and is unchanged; without a gene record nothing else changes.
 - Command line: `--genbank`, `--transcript`, `--regions`, `--epitope`; the gene record file name and SHA-256 are written to `run.json`. Start page: optional GenBank file with essential regions and antibody epitope.
 - Tests: 29 added (record parser, strand handling, window location, independent translation check, NMD rules, splice sites, start loss, isoforms, decision, report, command line, design-file coding block, calibration, discordance warning).

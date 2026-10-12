@@ -1,4 +1,4 @@
-# Changes in 0.3.0 (preview) and the evidence for them
+# Changes in 0.3.0 and the evidence for them
 
 0.3.0 adds two small, separately switchable checks to 0.2.0. The allele library, the fit, the intervals and the decision rules are unchanged, and on 350 simulated traces the output is identical to 0.2.0. The checks were chosen by running Assured QC next to two other engines (sangerdecon, a Python ICE-like tool; Assured_TraceEdit) on the lab's own pairs and on a fresh simulated set, and porting only what the real pairs showed Assured QC missing.
 
@@ -56,11 +56,19 @@ All 350 outputs are identical between versions, and the re-anchoring never trigg
 * ICE 1.2.0 (non-commercial research licence) was run locally as a comparator and is not included here.
 * Merging remains held for the owner's decision; this branch is stacked on `feat/assured-qc-0.2.0`.
 
-## Post-freeze changes merged from the 0.2.0 branch (2026-10-12)
+## Final freeze and no-regression check (2026-10-12)
 
-The engine state frozen in `bench/ENGINE_FREEZE_0.3.0.json` was used for the 0.3.0 no-regression scoring (seed 20261215). After it, the changes of the 0.2.0 branch made on 2026-10-12 were merged in:
-functional knockout assessment (`src/coding.js`, `src/genbank.js`; only active when a gene record or a design-file coding block is given), the optional `coding` block in `src/designSpec.js`, the calibration command,
-`contributions[].sequence` in `src/decompose.js`, and the discordance warning (`src/analyze.js`: for knockout and deletion designs the 40 bases next to the cut; `docs/discordance-warning.md`).
-Estimates, intervals and decisions without a gene record are unchanged; this was checked on 160 laboratory clones (identical edited share, intended edit and knockout score between the merge parents).
-The frozen file hashes therefore no longer describe the merged engine; the freeze file is left as it was.
+The engine state of `bench/ENGINE_FREEZE_0.3.0.json` (2026-10-09) was used for the pre-registered no-regression scoring. Afterwards the changes of the 0.2.0 branch made on 2026-10-12 were merged in (nine frozen files changed: `analyze.js`, `batch.js`, `decision.js`, `decompose.js`, `designSpec.js`, `quick.js`, `report.js`, `runJobs.js`, `uncertainty.js`; three files added: `coding.js`, `genbank.js`, `calibration.js`): the functional knockout assessment (active only when a gene record or a design-file coding block is given), the optional `coding` block of the design file, the calibration command, the discordance warning (for knockout and deletion designs the 40 bases next to the cut), and `contributions[].sequence` in `decompose.js`. `QC_VERSION` was corrected from 0.1.0 to 0.3.0 after the check below (a string in `report.js` that appears in reports and `run.json`).
 
+Criterion, fixed before the run: with no gene record, the merged engine must give the same edited share, intended edit, knockout score and genotype as the engine frozen on 2026-10-09, on traces not used before, and the scorecard must not change.
+
+| | Frozen 2026-10-09 | Merged 2026-10-12 |
+|---|---|---|
+| Fresh seed, simulated traces (seed 20261220, `bench/simulate.py`, frozen scorer, `--split all`) | 351 | 351 |
+| Traces whose output differs (edited, intended, knockout, genotype) | | 0 of 351 |
+| Analysed | 349 of 351 | 349 of 351 |
+| Edited-share MAE, analysed (95% bootstrap CI) | 1.89 (1.53-2.30) | 1.89 (1.53-2.30) |
+| Wild-type false positives (estimate at or above 2.0 points) | 0% of 36 wild-type traces | same |
+| Intended-edit MAE / knockout-score MAE | 3.12 / 0.67 | same |
+
+Also unchanged on 160 laboratory control/edited pairs (edited share, intended edit and knockout score identical between the merge parents; 143 tests pass). Limits are those of the pre-registration: the seed is new but the loci are the lab's own, so this checks that nothing regressed, it is not a held-out-locus test. The discordance warning is the one intended behavioural change (a warning, not an estimate; `docs/discordance-warning.md`). The new freeze is `bench/ENGINE_FREEZE_0.3.0_final.json`; the 2026-10-09 file is left as it was.
