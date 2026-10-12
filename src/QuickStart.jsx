@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { classifyFiles, buildPairs, readDesign, planTasks, runPool } from "./quick.js";
+import { parseCodingFields } from "./coding.js";
 import { parseAbif } from "./abif.js";
 import { headline } from "./batch.js";
 import { buildQcReportHtml, buildResultsCsv } from "./report.js";
@@ -15,7 +16,7 @@ const interval = (iv) => (iv ? `${iv[0]}-${iv[1]}%` : "");
 
 export default function QuickStart() {
   const files = useRef(new Map()); const buffers = useRef(new Map());
-  const [traceNames, setTraceNames] = useState([]); const [sheetText, setSheetText] = useState(""); const [designText, setDesignText] = useState(""); const [designName, setDesignName] = useState("");
+  const [traceNames, setTraceNames] = useState([]); const [sheetText, setSheetText] = useState(""); const [designText, setDesignText] = useState(""); const [designName, setDesignName] = useState(""); const [geneText, setGeneText] = useState(""); const [geneName, setGeneName] = useState(""); const [regionsText, setRegionsText] = useState(""); const [epitopeText, setEpitopeText] = useState("");
   const [guidesText, setGuidesText] = useState(""); const [donorText, setDonorText] = useState(""); const [nuclease, setNuclease] = useState("SpCas9"); const [typeOverride, setTypeOverride] = useState(""); const [goal, setGoal] = useState("homozygous");
   const [pairsEdit, setPairsEdit] = useState({}); const [running, setRunning] = useState(false); const [progress, setProgress] = useState(null);
   const [outcome, setOutcome] = useState(null); const [picked, setPicked] = useState(0); const [figureBusy, setFigureBusy] = useState(false); const [error, setError] = useState("");
@@ -27,6 +28,7 @@ export default function QuickStart() {
     setTraceNames(Array.from(new Set([...traceNames, ...kinds.traces]))); setPairsEdit({}); setOutcome(null);
     const sheet = incoming.find((f) => kinds.sheets.includes(f.name)); if (sheet) setSheetText(await sheet.text());
     const design = incoming.find((f) => kinds.designs.includes(f.name)); if (design) { setDesignText(await design.text()); setDesignName(design.name); }
+    const gene = incoming.find((f) => kinds.genes.includes(f.name)); if (gene) { setGeneText(await gene.text()); setGeneName(gene.name); }
   };
 
   const built = useMemo(() => (traceNames.length ? buildPairs({ traceNames, sheetText }) : { pairs: [], problems: [] }), [traceNames, sheetText]);
@@ -42,7 +44,9 @@ export default function QuickStart() {
       const needed = new Set(pairs.flatMap((p) => [...p.control, ...p.edited]));
       for (const name of needed) if (!buffers.current.has(name)) buffers.current.set(name, await arrayBufferOf(files.current.get(name)));
       const parsed = new Map(); const getTrace = (name) => { if (!parsed.has(name)) parsed.set(name, parseAbif(buffers.current.get(name).slice(0), name)); return parsed.get(name); };
-      const { tasks, problems } = planTasks({ pairs, getTrace, design, guides, donor: donorText.replace(/\s+/g, ""), nuclease, sampleType: typeOverride, goal });
+      const coding = geneText ? parseCodingFields({ regionsText, epitopeText }) : { options: {}, problems: [] };
+      if (coding.problems.length) { setError(coding.problems.join(" ")); setRunning(false); return; }
+      const { tasks, problems } = planTasks({ pairs, getTrace, design, guides, donor: donorText.replace(/\s+/g, ""), nuclease, sampleType: typeOverride, goal, genbank: geneText, codingOptions: coding.options });
       if (!tasks.length) { setError(problems.join(" ") || "Nothing to analyse."); setRunning(false); return; }
       setProgress({ done: 0, total: tasks.length });
       const size = Math.max(1, Math.min(8, (navigator.hardwareConcurrency || 4) - 1));
@@ -71,8 +75,8 @@ export default function QuickStart() {
     <div className="card quick">
       <h2>Quick start: drop your files</h2>
       <div className={`drop${dragging ? " over" : ""}`} onDragOver={(e) => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={(e) => { e.preventDefault(); setDragging(false); addFiles(e.dataTransfer.files); }}>
-        <p><b>Drop the .ab1 files here</b> (controls and samples together, forward and reverse reads), plus, if you have them, the design (report .html or file .json) and a sample sheet (.csv).</p>
-        <input type="file" multiple accept=".ab1,.abi,.csv,.tsv,.json,.html,.htm" onChange={(e) => addFiles(e.target.files)} aria-label="Choose files" />
+        <p><b>Drop the .ab1 files here</b> (controls and samples together, forward and reverse reads), plus, if you have them, the design (report .html or file .json) a sample sheet (.csv) and the gene record (GenBank, .gb).</p>
+        <input type="file" multiple accept=".ab1,.abi,.csv,.tsv,.json,.html,.htm,.gb,.gbk,.gbff,.genbank" onChange={(e) => addFiles(e.target.files)} aria-label="Choose files" />
         <input type="file" multiple webkitdirectory="" directory="" onChange={(e) => addFiles(e.target.files)} aria-label="Choose a folder" />
         <p className="muted">Nothing is uploaded: the files are read and analysed in this browser.</p>
       </div>
@@ -97,6 +101,17 @@ export default function QuickStart() {
             <input id="q-guides" type="text" value={guidesText} onChange={(e) => setGuidesText(e.target.value)} placeholder="leave empty to infer the cut from the traces" />
             <label className="field" htmlFor="q-donor">Donor (ssODN, up to 300 nt) for SNP corrections and small tags</label>
             <textarea id="q-donor" value={donorText} onChange={(e) => setDonorText(e.target.value)} />
+            <label className="field" htmlFor="q-gene">Gene record (GenBank, optional): judges knockouts on the protein</label>
+            <input id="q-gene" type="file" accept=".gb,.gbk,.gbff,.genbank,.txt" onChange={async (e) => { const f = e.target.files && e.target.files[0]; if (f) { setGeneText(await f.text()); setGeneName(f.name); } else { setGeneText(""); setGeneName(""); } }} />
+            {geneName && <p className="muted">Using {geneName}: each allele is translated, nonsense-mediated decay and splice sites are assessed, and the knockout is called on the predicted protein.</p>}
+            {geneText && (
+              <>
+                <label className="field" htmlFor="q-regions">Essential regions (optional, residue numbers)</label>
+                <input id="q-regions" type="text" value={regionsText} onChange={(e) => setRegionsText(e.target.value)} placeholder="TIR domain:172-314, Death domain:67-122" />
+                <label className="field" htmlFor="q-epitope">Antibody epitope (optional, residue numbers)</label>
+                <input id="q-epitope" type="text" value={epitopeText} onChange={(e) => setEpitopeText(e.target.value)} placeholder="200-250" />
+              </>
+            )}
             <label className="field" htmlFor="q-nuc">Nuclease</label>
             <select id="q-nuc" value={nuclease} onChange={(e) => setNuclease(e.target.value)}>{Object.entries(NUCLEASES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select>
             <label className="field" htmlFor="q-type">Sample type (overrides the guess for every sample)</label>

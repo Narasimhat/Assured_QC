@@ -5,6 +5,7 @@ import { decomposeAdaptive } from "./pursuit.js";
 import { computeIntervals, upstreamNoise, upstreamBackground } from "./uncertainty.js";
 import { confidenceFrom } from "./reliability.js";
 import { callGenotype } from "./genotype.js";
+import { assessFunction, assessAllele } from "./coding.js";
 
 const KO_MIN_SIZE = 21;
 export const isKnockoutSize = (size) => size % 3 !== 0 || Math.abs(size) >= KO_MIN_SIZE;
@@ -81,6 +82,17 @@ export function unexplainedBaselineFor(decomposition, background, options = {}) 
   return options.adaptiveBaseline !== false && goodFit ? Math.max(UNEXPLAINED_BASELINE, Math.min(0.4, background + 0.03)) : UNEXPLAINED_BASELINE;
 }
 
+
+// Functional knockout assessment (coding context supplied): each reported allele is spliced into the coding sequence and translated (src/coding.js).
+function functionalFor(coding, decomposition, summary) {
+  if (!coding) return null;
+  const fn = assessFunction(coding, decomposition.contributions.map((c) => ({ id: c.id, kind: c.kind, label: c.label, size: c.size, fraction: c.fraction, sequence: c.sequence })));
+  const explained = 1 - (summary.unexplainedPct || 0) / 100;
+  summary.functionalKoPct = pct(explained * fn.score.lof); summary.functionalUncertainPct = pct(explained * fn.score.uncertain);
+  return fn;
+}
+const lofOfFor = (coding) => (coding ? (allele) => allele.sequence !== undefined && assessAllele(coding, allele.sequence).lof === true : undefined);
+
 export function analysePair({ control, edited, spec, options = {} }) {
   const prepared = prepareSample({ control, edited, spec, options });
   if (!prepared.ok) return { ok: false, error: prepared.error, warnings: prepared.warnings, mixedSignal: Boolean(prepared.mixedSignal) };
@@ -92,7 +104,8 @@ export function analysePair({ control, edited, spec, options = {} }) {
   const background = upstreamBackground(prepared);
   const baseline = unexplainedBaselineFor(decomposition, background, options);
   const summary = summarise(decomposition, baseline);
-  const intervals = options.intervals === false ? null : computeIntervals(decomposition, summary, { noiseFloor: upstreamNoise(prepared), ...(options.interval || {}) });
+  const functional = functionalFor(options.coding, decomposition, summary);
+  const intervals = options.intervals === false ? null : computeIntervals(decomposition, summary, { noiseFloor: upstreamNoise(prepared), lofOf: lofOfFor(options.coding), ...(options.interval || {}) });
   delete decomposition.internals; // large matrices; not part of a result
   const warnings = [...prepared.warnings];
   if (decomposition.r2 !== null && decomposition.r2 < 0.8) warnings.push(`The fit explains only ${(decomposition.r2 * 100).toFixed(0)}% of the difference from the wild type; the mixture may contain alleles outside the expected library (large deletions, rearrangements) or the traces may be noisy.`);
@@ -104,7 +117,7 @@ export function analysePair({ control, edited, spec, options = {} }) {
   const markerReadout = readMarkers(prepared);
   const genotype = options.sampleType === "clone" ? callGenotype(decomposition, options.genotype || {}) : null;
   return {
-    ok: true, warnings, prepared, decomposition, summary, intervals, confidence: confidenceFrom(intervals, (prepared.spec.donors || []).length > 0), markerReadout, genotype,
+    ok: true, warnings, prepared, decomposition, summary, intervals, confidence: confidenceFrom(intervals, (prepared.spec.donors || []).length > 0), markerReadout, genotype, functional,
     quality,
   };
 }
@@ -127,8 +140,9 @@ export function analyseReads({ reads, spec, options = {} }) {
   const decomposition = decomposeAdaptive({ prepared: list, alleles, options: { ...options, returnInternals: true } });
   const background = list.reduce((s, p) => s + upstreamBackground(p), 0) / list.length;
   const summary = summarise(decomposition, unexplainedBaselineFor(decomposition, background, options));
+  const functional = functionalFor(options.coding, decomposition, summary);
   const noise = list.reduce((s, p) => s + upstreamNoise(p), 0) / list.length;
-  const intervals = options.intervals === false ? null : computeIntervals(decomposition, summary, { noiseFloor: noise, ...(options.interval || {}) });
+  const intervals = options.intervals === false ? null : computeIntervals(decomposition, summary, { noiseFloor: noise, lofOf: lofOfFor(options.coding), ...(options.interval || {}) });
   delete decomposition.internals;
   if (decomposition.r2 !== null && decomposition.r2 < 0.8) warnings.push(`The fit explains only ${(decomposition.r2 * 100).toFixed(0)}% of the difference from the wild type; the mixture may contain alleles outside the expected library or the traces may be noisy.`);
   if (summary.unexplainedPct >= 15) warnings.push(`${summary.unexplainedPct}% of the signal after the cut is not explained by any allele in the library. It is counted as not wild type.`);
@@ -138,5 +152,5 @@ export function analyseReads({ reads, spec, options = {} }) {
   if (agreement && !agreement.agree) warnings.push(`The reads disagree about the edited share (${perRead.map((r) => `${r.name} ${r.editedPct}%`).join(", ")}). A PCR or sequencing artefact, a poor read or mixed template is more likely than biology: re-sequence from both ends.`);
   const quality = { discordanceBefore: Math.max(...list.map((p) => meanDiscordance(p, p.alignmentWindow.start, p.alignmentWindow.end))), upstreamRms: Math.sqrt(noise) };
   const genotype = options.sampleType === "clone" ? callGenotype(decomposition, options.genotype || {}) : null;
-  return { ok: true, warnings, prepared: first, preparedReads: list, decomposition, summary, intervals, confidence: confidenceFrom(intervals, (first.spec.donors || []).length > 0), markerReadout: readMarkers(first), genotype, quality, reads: perRead, agreement, readsUsed: usable.length, readsGiven: reads.length };
+  return { ok: true, warnings, prepared: first, preparedReads: list, decomposition, summary, intervals, confidence: confidenceFrom(intervals, (first.spec.donors || []).length > 0), markerReadout: readMarkers(first), genotype, functional, quality, reads: perRead, agreement, readsUsed: usable.length, readsGiven: reads.length };
 }
