@@ -4,6 +4,8 @@ The QC app reads one JSON object per design (`assured-qc-design/1`), exported by
 (`src/qcExport.js`, `buildQcDesignSpec(result)`). Everything the analysis needs is in it, so the QC app does
 not depend on the design engine.
 
+> The design app's exported HTML report is also a hand-off: Quick Start and the classic form read its guides and recommended ssODN donor (`src/designReport.js`). A report has no reference window, so the junction check for large knock-ins still needs the JSON spec described below.
+
 ## Coordinates
 
 All positions are 0-based indices into `reference.sequence`, a window of the uploaded reference (the + strand)

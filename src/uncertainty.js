@@ -8,6 +8,7 @@
 // residuals that are correlated across positions and channels; it was set on the development loci only (bench/, docs/scorecard.md).
 import { nnlsGram } from "./nnls.js";
 import { isKnockoutSize } from "./analyze.js";
+import { shiftAt } from "./offset.js";
 
 // margin: systematic error that the profile cannot see (peak-height variation at the few discriminating positions, model mismatch). Half-width in
 // points = c * 100 * sqrt(p (1 - p)) for a share p, with c rising with the background-signal share of the fit. c0, c1, cmax were chosen on the
@@ -76,7 +77,7 @@ const clamp01 = (value) => Math.min(1, Math.max(0, value));
 export function upstreamNoise(prepared) {
   const { control, edited, shift, alignmentWindow } = prepared; let sum = 0; let count = 0;
   for (let j = alignmentWindow.start; j < alignmentWindow.end; j += 1) {
-    const k = j + shift; if (k < 0 || k >= edited.calls.length || !control.valid[j] || !edited.valid[k]) continue;
+    const k = j + shiftAt(prepared, j); if (k < 0 || k >= edited.calls.length || !control.valid[j] || !edited.valid[k]) continue;
     for (let b = 0; b < 4; b += 1) { const d = edited.composition[k * 4 + b] - control.composition[j * 4 + b]; sum += d * d; count += 1; }
   }
   return count ? sum / count : 0;
@@ -87,7 +88,7 @@ export function upstreamBackground(prepared, span = 50) {
   const { control, edited, shift, alignmentWindow, firstCut } = prepared; let num = 0; let den = 0;
   // only the stretch just before the first cut: the quality of a read changes along its length, so the start of the read says little about the cut region
   for (let j = Math.max(alignmentWindow.start, firstCut - span); j < Math.min(alignmentWindow.end, firstCut - 2); j += 1) {
-    const k = j + shift; if (k < 0 || k >= edited.calls.length || !control.valid[j] || !edited.valid[k]) continue;
+    const k = j + shiftAt(prepared, j); if (k < 0 || k >= edited.calls.length || !control.valid[j] || !edited.valid[k]) continue;
     for (let b = 0; b < 4; b += 1) { const c = control.composition[j * 4 + b]; const g = 0.25 - c; num += (edited.composition[k * 4 + b] - c) * g; den += g * g; }
   }
   return den > 0 ? Math.min(1, Math.max(0, num / den)) : 0;

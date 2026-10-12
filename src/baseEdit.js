@@ -3,6 +3,7 @@
 // positions were converted together on the same allele, so the result is a per-position table, as in EditR; the indel library around the
 // nick site is still fitted for the (rare) indels.
 import { locateGuide } from "./nucleases.js";
+import { shiftAt } from "./offset.js";
 
 export const EDITORS = { ABE: { from: "A", to: "G", label: "Adenine base editor (A>G)" }, CBE: { from: "C", to: "T", label: "Cytosine base editor (C>T)" } };
 export const DEFAULT_WINDOW = [4, 8];
@@ -43,7 +44,7 @@ export function baseEditTable(prepared, markerReadout, noiseRms = 0, options = {
     if (!row.covered) return { ...base, covered: false, reason: row.reason };
     const naive = Math.max(0, row.altNet) * 100; let conversion = naive; let corrected = false;
     if (options.heightCorrection !== false) {
-      const j = row.readIndex; const k = j + shift; const alt = BASE_INDEX[row.marker.alt]; const ref = BASE_INDEX[row.marker.ref];
+      const j = row.readIndex; const k = j + shiftAt(prepared, j); const alt = BASE_INDEX[row.marker.alt]; const ref = BASE_INDEX[row.marker.ref];
       const expected = [];
       const span = options.span ?? 30;
       for (let m = Math.max(0, j - span); m <= Math.min(control.calls.length - 1, j + span); m += 1) if (m !== j && control.calls[m] === row.marker.alt && control.quality[m] >= 30 && control.valid[m]) expected.push(control.composition[m * 4 + alt] * control.total[m]);
