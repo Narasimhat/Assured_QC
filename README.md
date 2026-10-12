@@ -41,12 +41,24 @@ The edited read is aligned to the design reference using the control read to rem
 
 Unlike the headline editing number of other Sanger tools, the intended edit and the blocking-changes-only conversion are reported separately. A synthetic clone with half intended-edit alleles and half blocking-only alleles is reported here as about 50% intended edit and 47% blocking-only; ICE 1.2.0 reports 93% HDR for it (see `docs/validation.md`).
 
+## Functional knockout assessment (0.3.0)
+
+The knockout score of earlier versions counts alleles whose net length change is not a multiple of three, or that are 21 bp or longer. That is a frameshift proxy: it ignores where the edit lies in the gene. With a gene record (GenBank file with the CDS and exon structure) each allele is placed in the coding sequence, translated, and judged on the protein: premature stop and nonsense-mediated decay (exon-junction rules), truncation size, restart of translation at a downstream ATG, splice-site loss (exon skipping against intron retention), start and stop loss, and in-frame changes (against essential regions you mark). A clone gets one call (predicted knockout, with caveats, not a knockout, uncertain), a functional knockout score with an interval, and a list of what to run to confirm it (Western blot or mass spectrometry, RT-qPCR downstream of the stop, RT-PCR across the exon for splice edits).
+
+```
+node cli/assured-qc.mjs run reads/ --design design.json --genbank gene.gb \
+     --regions "TIR domain:172-314" --epitope 200-250
+```
+
+In the browser, add the `.gb` file with the traces. The call is a prediction from sequence; residual protein after frameshift edits is common (about a third of verified knockout lines in one survey), so loss of protein, not the score, confirms a knockout. Rules, thresholds, limits and references: `docs/functional-knockout.md`.
+
 ## Accuracy and limits
 
 Held-out simulated test (traces built from real controls with known alleles; protocol and success criteria fixed before the run; `docs/scorecard.md`, `docs/results.md`): on 207 traces from loci not used in development, mean absolute error of the edited share is 1.9 points (95% CI 1.5-2.3) against 6.6 for ICE 1.2.0, 5.9 for peaksplit and 5.0 for Assured_TraceEdit; the intended-edit error is 4.2 against 7.0, 6.6 and 9.3, large deletions of 150 bp are recovered in 92% of traces (ICE 25%), and partial conversions are never reported as the intended edit (ICE and peaksplit always do). Criteria not met on this test: wild-type traces are called 2 or more points edited in 2 of 21 cases (the interval rule reports none of them as detected), the practical detection limit is about 5% (target 2%), HDR dilutions at 5-25% are 3 points off on average, and intended-edit intervals cover 81% of truths (target 90-98%; edited-share and knockout intervals cover 96% and 95%). The truth in this test is simulated, so these numbers are a bound on how well a tool can do on traces of this kind, not a measurement on your clones; the wet-lab mixture protocol (`docs/known-mixture-protocol.md`) has not been run. Only tools that can be scripted here were compared (ICE, peaksplit, Assured_TraceEdit); DECODR, TIDE, SeqScreener, EditR and Tracy were not.
 
 On 172 laboratory pairs there is no sequencing-confirmed truth; the engine agrees with direct chromatogram readouts to 2.9 points for knockout clones (`docs/validation.md`). Earlier checks: 17 synthetic pairs used while the engine was built (1.5 points for editing %), and the ICE example traces (agreement within a few points, except a three-guide multiplex at 74% against ICE 63% and a 2-bp substitution at 34% HDR against ICE 44%).
 
+- The functional knockout score is a sequence-based prediction and has not been calibrated against protein measurements; without a gene record only the frameshift proxy is reported.
 - Detection limit is about 5% for an allele; Sanger traces cannot resolve smaller fractions. Every result carries an interval and a confidence tier (high, moderate, low) from the interval width; low-tier samples are not accepted automatically.
 - A trace gives an unphased mixture per position. Alleles that differ only by combinations of changes, rather than by sequence, are reported as "also consistent with" where indistinguishable.
 - The clone call assumes at most two alleles. A large deletion on one allele that removes a primer site shows up as apparent homozygosity; check with out-out PCR.

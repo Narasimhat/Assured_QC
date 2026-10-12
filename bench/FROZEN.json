@@ -17,5 +17,5 @@
   "L11_SNP_editing"
  ],
  "amendments": [],
- "public_copy_note": "In this public copy the locus names in bench/score.py, this file and the docs are replaced by codes L01-L12 (L12 = a two-guide deletion clone set used only in the wet-lab protocol); the scoring logic is unchanged. The hashes under 'files' are those of the original files that produced the reported results."
+ "public_copy_note": "In this public copy the locus names in bench/score.py, this file and the docs are replaced by codes L01-L12 (L12 = a two-guide deletion clone set: 8 clones read across the junctions, validation source D4 in docs/scorecard.md, and the layout of the wet-lab protocol); the scoring logic is unchanged. The hashes under 'files' are those of the original files that produced the reported results."
 }

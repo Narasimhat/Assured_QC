@@ -55,3 +55,12 @@ All 350 outputs are identical between versions, and the re-anchoring never trigg
 * The README criteria 0.2.0 did not meet (WT false positives, 5 % detection limit, graded-HDR error, interval coverage) are unchanged.
 * ICE 1.2.0 (non-commercial research licence) was run locally as a comparator and is not included here.
 * Merging remains held for the owner's decision; this branch is stacked on `feat/assured-qc-0.2.0`.
+
+## Post-freeze changes merged from the 0.2.0 branch (2026-10-12)
+
+The engine state frozen in `bench/ENGINE_FREEZE_0.3.0.json` was used for the 0.3.0 no-regression scoring (seed 20261215). After it, the changes of the 0.2.0 branch made on 2026-10-12 were merged in:
+functional knockout assessment (`src/coding.js`, `src/genbank.js`; only active when a gene record or a design-file coding block is given), the optional `coding` block in `src/designSpec.js`, the calibration command,
+`contributions[].sequence` in `src/decompose.js`, and the discordance warning (`src/analyze.js`: for knockout and deletion designs the 40 bases next to the cut; `docs/discordance-warning.md`).
+Estimates, intervals and decisions without a gene record are unchanged; this was checked on 160 laboratory clones (identical edited share, intended edit and knockout score between the merge parents).
+The frozen file hashes therefore no longer describe the merged engine; the freeze file is left as it was.
+
