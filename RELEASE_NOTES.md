@@ -3,7 +3,7 @@
 ## 0.4.1 (2026-10-12)
 
 - Run summary graph (`src/summaryFigure.js`, `docs/recommendation.md`): one row per sample, best clone first, with the decision, a stacked bar of the alleles and their shares, the edited share or intended edit with its interval, the knockout support and the plan. Browser: above the results table, with SVG and PNG downloads. HTML report: at the top of the summary. Command line: `summary.svg`.
-- Reporting only: `report.js` (the graph and the version string) is the one changed file among the 38 hashed in `bench/ENGINE_FREEZE_0.4.1.json`; the other 37 are byte-identical to 0.4.0, and `summaryFigure.js` is added.
+- Reporting only: `report.js` (the graph and the version string) is the one changed file among the 40 hashed in `bench/ENGINE_FREEZE_0.4.0.json`; the other 39 are byte-identical, and `summaryFigure.js` is added (41 hashed in `bench/ENGINE_FREEZE_0.4.1.json`).
 - `QC_VERSION` and `package.json` read 0.4.1.
 
 ## 0.4.0 (2026-10-12)
