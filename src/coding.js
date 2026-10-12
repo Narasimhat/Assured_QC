@@ -53,7 +53,7 @@ export function buildModels(gb, { gene = "", transcript = "" } = {}) {
     let segs = strand === "+" ? f.location.segments.map(([s, e]) => [s, e]) : f.location.segments.map(([s, e]) => [Lg - e, Lg - s]).reverse();
     const codonStart = Number(qualifier(f, "codon_start") || 1); if (codonStart > 1) segs[0][0] += codonStart - 1;
     const cdsSeq = segs.map(([s, e]) => T.slice(s, e)).join("");
-    if (cdsSeq.length % 3 !== 0) warnings.push(`CDS ${i + 1} has a length that is not a multiple of three; skipped.`);
+    if (cdsSeq.length % 3 !== 0) warnings.push(`A CDS feature of the record (${qualifier(f, "gene") || qualifier(f, "product") || `CDS ${i + 1}`}) is partial or not a multiple of three nucleotides and was not used.`);
     if (cdsSeq.length % 3 !== 0 || cdsSeq.length < 6) return;
     const { protein } = translate(cdsSeq);
     models.push({
@@ -321,6 +321,13 @@ export function buildCodingContext(genbank, input = {}) {
   if (!models.length) return { ok: false, error: "The gene record has no usable CDS feature." };
   const loc = locateWindow(gb.sequence, reference);
   if (!loc) return { ok: false, error: "The reference sequence of this design was not found in the gene record (it must match the record's genomic sequence to within 10%)." };
+  // A genomic record often carries the neighbouring gene as well: keep the coding sequences of the gene the reference window lies in (or, if the window lies in none, leave them all)
+  const bodyOverlap = (model) => { const map = windowMapper(loc, reference.length, model.Lg, model.strand); const w = map({ s: 0, e: reference.length, ins: "" }); const lo = Math.min(w.s, w.e); const hi = Math.max(w.s, w.e); return Math.min(hi, model.segs[model.segs.length - 1][1]) - Math.max(lo, model.segs[0][0]); };
+  const inside = models.filter((m) => bodyOverlap(m) > 0);
+  if (inside.length && inside.length < models.length) {
+    const genes = new Set(inside.map((m) => m.gene || m.id)); const keep = models.filter((m) => genes.has(m.gene || m.id));
+    if (keep.length < models.length) { warnings.push(`${models.length - keep.length} coding sequence${models.length - keep.length === 1 ? "" : "s"} of other genes in the record ${models.length - keep.length === 1 ? "was" : "were"} ignored.`); models.splice(0, models.length, ...keep); }
+  }
   if (!loc.covered) warnings.push("The reference window extends beyond the gene record; edits there are not modelled.");
   const primary = models[0];
   const context = { gb: { locus: gb.locus, accession: gb.accession, definition: gb.definition }, models, location: loc, warnings, referenceLength: reference.length, regions: input.regions || [], epitope: input.epitope || null, reference, geneStrand: primary.strand,

@@ -17,6 +17,8 @@ A GenBank record that contains the edited region and a coding sequence (CDS) fea
 
 - Design file: a design written by the Assured design app for a knockout or deletion carries the gene region and coding exons in its `coding` block (`docs/design-handoff.md`); no second upload is needed. A gene record given with the traces takes precedence.
 
+A record that also carries a neighbouring gene is handled: only the coding sequences of the gene in which the reference window lies are modelled, and the others are named in a warning. A window that lies in no gene keeps every coding sequence.
+
 The window that the traces cover (the design reference) is located in the record by k-mer seeds on either strand (identity of at least 0.9 required); if it is not found, or the record has no CDS, the functional score is omitted and the report says why, while the frameshift score is unchanged.
 
 ## What is computed for each allele
