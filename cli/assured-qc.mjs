@@ -6,6 +6,9 @@
 //        [--type clone|pool] [--goal homozygous|any] [--threads N] [--out results/]
 //        [--genbank gene.gb [--transcript NM_000000] [--regions "TIR domain:172-314,Death domain:67-122"] [--epitope 200-250]]   (functional knockout assessment)
 //   node cli/assured-qc.mjs figure --control control.ab1 --edited edited.ab1 [--design design.json | --guides G1,G2] [--out figure.svg]
+//   node cli/assured-qc.mjs recommend results.json [--observations protein.csv] [--panel 3] [--out recommendation.csv]   (rank the clones, choose the panel to confirm)
+//   node cli/assured-qc.mjs calibrate results.json observations.csv [--out calibration.md]   (how often the functional call was borne out)
+//   run also takes --observations protein.csv (sample, protein[, rna]) and --panel N
 //
 // Nothing is uploaded anywhere: the files are read from disk and analysed in this process and its worker threads.
 import { readdirSync, readFileSync, writeFileSync, mkdirSync, statSync, existsSync } from "node:fs";
@@ -18,6 +21,7 @@ import { parseAbif } from "../src/abif.js";
 import { planDesign, WORKFLOWS } from "../src/batch.js";
 import { parseCodingFields } from "../src/coding.js";
 import { calibrate, parseObservations, calibrationMarkdown } from "../src/calibration.js";
+import { withRecommendations, applyObservations, recommendationCsv, panelOf } from "../src/recommend.js";
 import { autoPair, parseSampleSheet, resolveSheet } from "../src/sheet.js";
 import { parseDesignReport } from "../src/designReport.js";
 import { buildQcReportHtml, buildResultsCsv, QC_VERSION } from "../src/report.js";
@@ -37,7 +41,7 @@ const readTrace = (p) => { const b = readFileSync(p); return parseAbif(b.buffer.
 
 export async function main(argv) {
   const args = parseArgs(argv); const command = args._[0];
-  if (!command || command === "help" || args.help) { console.log(readFileSync(fileURLToPath(import.meta.url), "utf8").split("\n").slice(2, 9).map((l) => l.replace(/^\/\/ ?/, "")).join("\n")); return 0; }
+  if (!command || command === "help" || args.help) { console.log(readFileSync(fileURLToPath(import.meta.url), "utf8").split("\n").slice(2, 14).map((l) => l.replace(/^\/\/ ?/, "")).join("\n")); return 0; }
   if (command === "calibrate") {
     // assured-qc calibrate results.json observations.csv [--out calibration.md]: how often the functional knockout call was borne out by protein (and RNA) results
     const [resultsPath, observationsPath] = [args._[1], args._[2]];
@@ -46,6 +50,19 @@ export async function main(argv) {
     const result = calibrate(JSON.parse(readFileSync(resultsPath, "utf8")), parsed.rows); const markdown = calibrationMarkdown(result);
     const target = args.out || "calibration.md"; writeFileSync(target, markdown); writeFileSync(target.replace(/\.md$/i, "") + ".json", JSON.stringify(result, null, 1));
     console.log(`${result.n} clones scored; predicted knockouts ${result.knockoutCall.called}, protein absent in ${result.knockoutCall.confirmed}. ${result.note} Written to ${target}.`); return 0;
+  }
+  if (command === "recommend") {
+    // assured-qc recommend results.json [--observations protein.csv] [--panel 3] [--out recommendation.csv]: rank the clones and name the panel to take to the bench
+    const resultsPath = args._[1]; if (!resultsPath || !existsSync(resultsPath)) { console.error("recommend needs results.json (from a run)."); return 1; }
+    let results = JSON.parse(readFileSync(resultsPath, "utf8")); const notes = [];
+    if (args.observations) {
+      if (!existsSync(args.observations)) { console.error(`Protein results not found: ${args.observations}`); return 1; }
+      const parsed = parseObservations(readFileSync(args.observations, "utf8")); if (parsed.errors.length) { parsed.errors.forEach((e) => console.error(e)); return 1; }
+      const applied = applyObservations(results, parsed.rows); results = applied.results; notes.push(...applied.problems); console.log(`Protein results applied to ${applied.matched} sample(s).`);
+    }
+    results = withRecommendations(results, { panel: Number(args.panel) || 3 });
+    const target = args.out || "recommendation.csv"; writeFileSync(target, recommendationCsv(results)); writeFileSync(target.replace(/\.csv$/i, "") + ".json", JSON.stringify(results.map((r) => ({ name: r.name, decision: r.decision, confirmation: r.confirmation || null, recommendation: r.recommendation })), null, 1));
+    console.log(`Take forward first: ${panelOf(results).join(", ") || "none"}. Written to ${target}.`); notes.forEach((n) => console.log(`  note: ${n}`)); return 0;
   }
   if (command === "figure") {
     if (!args.control || !args.edited) { console.error("figure needs --control FILE --edited FILE (and --guides or --design)."); return 1; }
@@ -57,7 +74,7 @@ export async function main(argv) {
     const { svg, result } = chromatogramFigure({ name: args.name || path.basename(args.edited).replace(/\.ab1$/i, ""), controlTrace: control, editedTrace: edited, spec: plan.spec, sampleType: args.type || "clone", workflow: args.workflow || (plan.spec.donors?.length ? "snp" : plan.spec.guides.length > 1 ? "deletion" : "knockout") });
     const target = args.out || "figure.svg"; writeFileSync(target, svg); console.log(`${target}${result && result.decision ? `: ${result.decision.decision}` : ""}`); return 0;
   }
-  if (command !== "run") { console.error(`Unknown command ${command}. Use: run <folder> | figure --control FILE --edited FILE | calibrate results.json observations.csv`); return 1; }
+  if (command !== "run") { console.error(`Unknown command ${command}. Use: run <folder> | figure --control FILE --edited FILE | calibrate results.json observations.csv | recommend results.json`); return 1; }
   const folder = args._[1]; if (!folder || !existsSync(folder)) { console.error("Give the folder with the .ab1 files."); return 1; }
   const out = args.out || path.join(folder, "assured-qc-results"); mkdirSync(out, { recursive: true });
   const files = walk(folder).filter((p) => /\.(ab1|abi)$/i.test(p) && !p.startsWith(path.resolve(out)));
@@ -120,6 +137,13 @@ export async function main(argv) {
   process.stderr.write("\n");
   results.forEach((r, i) => { r.name = tasks[i].name; r.pairing = tasks[i].meta; r.well = wellOf(path.basename(tasks[i].edited[0])); r.workflow = tasks[i].workflow; if (tasks[i].meta.planNotes.length) r.warnings = [...tasks[i].meta.planNotes, ...(r.warnings || [])]; });
   const seconds = (Date.now() - started) / 1000;
+  // protein results from the bench change the decision of the samples they cover; every clone is then ranked and the panel to confirm is named
+  if (args.observations) {
+    if (!existsSync(args.observations)) { console.error(`Protein results not found: ${args.observations}`); return 1; }
+    const parsed = parseObservations(readFileSync(args.observations, "utf8")); if (parsed.errors.length) { parsed.errors.forEach((e) => console.error(e)); return 1; }
+    const applied = applyObservations(results, parsed.rows); applied.results.forEach((r, i) => { results[i] = r; }); applied.problems.forEach((p) => problems.push(`Protein results: ${p}`));
+  }
+  withRecommendations(results, { panel: Number(args.panel) || 3 }).forEach((r, i) => { results[i] = r; });
   // 5. outputs
   const workflowKey = results[0].workflow; const csv = buildResultsCsv(workflowKey, results);
   writeFileSync(path.join(out, "results.csv"), csv);
@@ -127,8 +151,10 @@ export async function main(argv) {
   writeFileSync(path.join(out, "report.html"), buildQcReportHtml({ title: `Sanger QC report: ${path.basename(path.resolve(folder))}`, workflow: workflowKey, design: design.guides.join(", "), results, notes: problems }));
   writeFileSync(path.join(out, "plate.html"), buildPlateReportHtml({ title: path.basename(path.resolve(folder)), results }));
   writeFileSync(path.join(out, "resequence.csv"), resequenceListCsv(results));
+  writeFileSync(path.join(out, "recommendation.csv"), recommendationCsv(results));
   writeFileSync(path.join(out, "run.json"), JSON.stringify({ tool: "Assured QC", version: QC_VERSION, finished: new Date().toISOString(), seconds, threads, samples: results.length, samplesPerHour: Math.round((results.length / seconds) * 3600), arguments: { ...args, _: undefined }, geneRecord: genbank ? { file: path.basename(args.genbank), sha256: createHash("sha256").update(genbank).digest("hex"), options: codingOptions } : (designSpec && designSpec.coding && tasks.some((t) => t.options.codingInput) ? { file: "coding block of the design file", sha256: createHash("sha256").update(JSON.stringify(designSpec.coding)).digest("hex"), options: codingOptions } : null), workflow: workflowKey, nuclease, pairingProblems: problems, decisions: tally(results.map((r) => r.decision)) }, null, 1));
   const t = tally(results.map((r) => r.decision)); console.log(`${results.length} samples in ${seconds.toFixed(1)} s on ${threads} thread(s) (${Math.round((results.length / seconds) * 3600)} per hour): accept ${t.accept}, hold ${t.hold}, re-sequence ${t["re-sequence"]}, reject ${t.reject}. Results in ${out}`);
+  const panel = panelOf(results); if (panel.length) console.log(`Take forward first: ${panel.join(", ")} (ranked in recommendation.csv).`);
   problems.forEach((p) => console.log(`  note: ${p}`));
   return 0;
 }

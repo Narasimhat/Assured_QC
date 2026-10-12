@@ -6,6 +6,7 @@ import { headline } from "./batch.js";
 import { buildQcReportHtml, buildResultsCsv } from "./report.js";
 import { buildPlateReportHtml, resequenceListCsv } from "./plateReport.js";
 import { tally, DECISION_ORDER } from "./decision.js";
+import { withRecommendations, recommendationCsv, panelOf } from "./recommend.js";
 import { NUCLEASES } from "./nucleases.js";
 import Detail from "./Detail.jsx";
 
@@ -73,6 +74,8 @@ export default function QuickStart() {
   };
 
   const result = outcome ? outcome.results[picked] : null; const counts = outcome ? tally(outcome.results.map((r) => r.decision)) : null;
+  const ranked = outcome ? withRecommendations(outcome.results) : null; const recommendation = ranked && ranked[picked] ? ranked[picked].recommendation : null;
+  const PRIORITY_LABEL = { first: "carry forward", confirmed: "confirmed", reserve: "reserve", duplicate: "backup", discard: "discard", resequence: "sequence again" };
   const stamp = new Date().toISOString().slice(0, 10);
   const figure = async (format) => {
     if (!outcome || !result || !result.ok) return; setFigureBusy(true);
@@ -162,22 +165,25 @@ export default function QuickStart() {
         <>
           <h2>Decisions</h2>
           <p className="chips">{DECISION_ORDER.map((k) => <span key={k} className={`chip d-${k.replace("-", "")}`}>{LABEL[k]} {counts[k]}</span>)}</p>
+          {panelOf(ranked).length > 0 && <p>Carry forward first: <b>{panelOf(ranked).join(", ")}</b> <span className="muted">(ranked by how strongly the sequence predicts loss of protein; best clone of each genotype)</span></p>}
           <p>
             <button type="button" className="link" onClick={() => download(`assured_qc_${stamp}.html`, buildQcReportHtml({ workflow: outcome.workflow, results: outcome.results, notes: outcome.problems }), "text/html")}>Report (HTML)</button>
-            <button type="button" className="link" onClick={() => download(`assured_qc_${stamp}.csv`, buildResultsCsv(outcome.workflow, outcome.results), "text/csv")}>Table (CSV)</button>
-            <button type="button" className="link" onClick={() => download(`assured_qc_plate_${stamp}.html`, buildPlateReportHtml({ title: "Plate", results: outcome.results }), "text/html")}>Plate view (HTML)</button>
+            <button type="button" className="link" onClick={() => download(`assured_qc_${stamp}.csv`, buildResultsCsv(outcome.workflow, ranked), "text/csv")}>Table (CSV)</button>
+            <button type="button" className="link" onClick={() => download(`assured_qc_plate_${stamp}.html`, buildPlateReportHtml({ title: "Plate", results: ranked }), "text/html")}>Plate view (HTML)</button>
             <button type="button" className="link" onClick={() => download(`assured_qc_resequence_${stamp}.csv`, resequenceListCsv(outcome.results), "text/csv")}>Re-sequence list (CSV)</button>
+            <button type="button" className="link" onClick={() => download(`assured_qc_recommendation_${stamp}.csv`, recommendationCsv(ranked), "text/csv")}>Recommendation (CSV)</button>
           </p>
           <div className="scroll">
-            <table><thead><tr><th>Decision</th><th>Sample</th><th>Result</th><th>Edited, 95% interval</th><th>Confidence</th></tr></thead><tbody>
+            <table><thead><tr><th>Decision</th><th>Sample</th><th>Result</th><th>Edited, 95% interval</th><th>Confidence</th><th>Priority</th></tr></thead><tbody>
               {outcome.results.map((r, i) => (
                 <tr key={r.name + i} className={`pick${i === picked ? " active" : ""}`} onClick={() => setPicked(i)}>
                   <td><span className={`chip d-${r.decision.decision.replace("-", "")}`}>{LABEL[r.decision.decision]}</span></td><td>{r.name}</td>
-                  <td>{r.ok ? headline(outcome.workflow, r) : r.error}</td><td>{r.ok ? `${r.summary.editedPct}% (${interval(r.intervals?.editedPct)})` : ""}</td><td>{r.confidence ? r.confidence.tier : ""}</td></tr>
+                  <td>{r.ok ? headline(outcome.workflow, r) : r.error}</td><td>{r.ok ? `${r.summary.editedPct}% (${interval(r.intervals?.editedPct)})` : ""}</td><td>{r.confidence ? r.confidence.tier : ""}</td><td>{ranked[i].recommendation.rank ? `#${ranked[i].recommendation.rank} ${PRIORITY_LABEL[ranked[i].recommendation.priority] || ""}` : (PRIORITY_LABEL[ranked[i].recommendation.priority] || "")}</td></tr>
               ))}
             </tbody></table>
           </div>
           {result && <div className="card"><p><b>{LABEL[result.decision.decision]}.</b> {result.decision.reasons.join(" ")} <span className="muted">{result.decision.next}</span></p>
+            {recommendation && recommendation.priority !== "none" && <p><b>Knockout support {recommendation.score} ({recommendation.tier}).</b> {recommendation.action} <span className="muted">{recommendation.why.join(" | ")}{recommendation.flags.length ? ` Note: ${recommendation.flags.join("; ")}.` : ""} The weights behind the support are provisional; only a protein result settles a knockout.</span></p>}
             <p><button type="button" className="link" disabled={figureBusy || !result.ok} onClick={() => figure("svg")}>Figure (SVG)</button><button type="button" className="link" disabled={figureBusy || !result.ok} onClick={() => figure("png")}>Figure (PNG, 300 dpi)</button></p></div>}
           {result && <Detail workflow={outcome.workflow} result={result} />}
         </>
