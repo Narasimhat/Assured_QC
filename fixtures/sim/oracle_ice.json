@@ -1,0 +1,1154 @@
+{
+ "meta": {
+  "tool": "Synthego ICE 1.2.0 (synthego-open/ice master, run with Biopython compatibility patch)",
+  "note": "Reference oracle only. ICE code is not part of the app. Free for non-commercial research with the Synthego copyright notice retained.",
+  "date": "2026-10-08",
+  "numpy": "2.4.6"
+ },
+ "results": {
+  "nr2f2_ko_pool_g1": {
+   "summary": {
+    "ice": 74,
+    "mean_discord_before": 0.034,
+    "mean_discord_after": 0.466,
+    "ice_d": 61,
+    "rsq": 0.99,
+    "hdr_pct": 0,
+    "ko_score": 53.0,
+    "notes": "",
+    "status": "succeeded"
+   },
+   "contribs": [
+    {
+     "rel": 0.26,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCGT|nATATGGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGA",
+     "indel": 1,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": 1
+      }
+     ]
+    },
+    {
+     "rel": 0.25,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCGT|ATATGGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": 0,
+     "wt": true,
+     "details": []
+    },
+    {
+     "rel": 0.16,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCGT|-TATGGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": -1,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -1
+      }
+     ]
+    },
+    {
+     "rel": 0.1,
+     "seq": "TCCGGCAGCAGTTTTAACT------|------CAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": -12,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -12
+      }
+     ]
+    },
+    {
+     "rel": 0.06,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCGT|---TGGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": -3,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -3
+      }
+     ]
+    },
+    {
+     "rel": 0.06,
+     "seq": "TCCGGCAGCAGTTTTAACTGGC---|----GGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": -7,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -7
+      }
+     ]
+    },
+    {
+     "rel": 0.04,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCG-|ATATGGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": -1,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -1
+      }
+     ]
+    },
+    {
+     "rel": 0.03,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCC--|-TATGGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": -3,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -3
+      }
+     ]
+    },
+    {
+     "rel": 0.01,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCGT|-------AATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": -7,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -7
+      }
+     ]
+    },
+    {
+     "rel": 0.01,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCG-|--ATGGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": -3,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -3
+      }
+     ]
+    },
+    {
+     "rel": 0.01,
+     "seq": "TCCGGCAGCAGTTTTAACTG-----|-------AATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": -12,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -12
+      }
+     ]
+    }
+   ],
+   "outcomes": {
+    "1": 26.0,
+    "0": 25.0,
+    "-1": 20.0,
+    "-12": 11.0,
+    "-3": 10.0,
+    "-7": 7.0
+   }
+  },
+  "nr2f2_ko_clone_het_wt_m1": {
+   "summary": {
+    "ice": 49,
+    "mean_discord_before": 0.034,
+    "mean_discord_after": 0.306,
+    "ice_d": 39,
+    "rsq": 0.99,
+    "hdr_pct": 0,
+    "ko_score": 49.0,
+    "notes": "",
+    "status": "succeeded"
+   },
+   "contribs": [
+    {
+     "rel": 0.5,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCGT|ATATGGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": 0,
+     "wt": true,
+     "details": []
+    },
+    {
+     "rel": 0.49,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCGT|-TATGGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": -1,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -1
+      }
+     ]
+    }
+   ],
+   "outcomes": {
+    "0": 50.0,
+    "-1": 49.0
+   }
+  },
+  "nr2f2_ko_clone_compound": {
+   "summary": {
+    "ice": 99,
+    "mean_discord_before": 0.034,
+    "mean_discord_after": 0.631,
+    "ice_d": 86,
+    "rsq": 0.99,
+    "hdr_pct": 0,
+    "ko_score": 99.0,
+    "notes": "",
+    "status": "succeeded"
+   },
+   "contribs": [
+    {
+     "rel": 0.49,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCGT|nATATGGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGA",
+     "indel": 1,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": 1
+      }
+     ]
+    },
+    {
+     "rel": 0.45,
+     "seq": "TCCGGCAGCAGTTTTAACTGGC---|----GGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": -7,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -7
+      }
+     ]
+    },
+    {
+     "rel": 0.03,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCG-|------CAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": -7,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -7
+      }
+     ]
+    },
+    {
+     "rel": 0.02,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCGT|-------AATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": -7,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -7
+      }
+     ]
+    }
+   ],
+   "outcomes": {
+    "1": 49.0,
+    "-7": 50.0
+   }
+  },
+  "nr2f2_ko_clone_hom_m1": {
+   "summary": {
+    "ice": 100,
+    "mean_discord_before": 0.033,
+    "mean_discord_after": 0.579,
+    "ice_d": 78,
+    "rsq": 1.0,
+    "hdr_pct": 0,
+    "ko_score": 100.0,
+    "notes": "",
+    "status": "succeeded"
+   },
+   "contribs": [
+    {
+     "rel": 1.0,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCGT|-TATGGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": -1,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -1
+      }
+     ]
+    }
+   ],
+   "outcomes": {
+    "-1": 100.0
+   }
+  },
+  "nr2f2_del_two_guides": {
+   "summary": {
+    "ice": 68,
+    "mean_discord_before": 0.036,
+    "mean_discord_after": 0.431,
+    "ice_d": 55,
+    "rsq": 0.99,
+    "hdr_pct": 0,
+    "ko_score": 68.0,
+    "notes": "",
+    "status": "succeeded"
+   },
+   "contribs": [
+    {
+     "rel": 0.31,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCGT|ATATGGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": 0,
+     "wt": true,
+     "details": []
+    },
+    {
+     "rel": 0.19,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCGT|-----------------------------|AGAAGGGGGAGTGAAACAGAGAAAG",
+     "indel": -29,
+     "wt": false,
+     "details": [
+      {
+       "label": "dropout",
+       "value": -29
+      }
+     ]
+    },
+    {
+     "rel": 0.15,
+     "seq": "GGCAATTCAATAAATAAATAAAATA|nAGAAGGGGGAGTGAAACAGAGAAAGAAAAGGCAAAAGACTGGTTTGTTT",
+     "indel": 1,
+     "wt": false,
+     "details": [
+      {
+       "label": "g2",
+       "value": 1
+      }
+     ]
+    },
+    {
+     "rel": 0.09,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCGT|-TATGGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": -1,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -1
+      }
+     ]
+    },
+    {
+     "rel": 0.09,
+     "seq": "GGCAATTCAATAAATAAATAAAATA|--AAGGGGGAGTGAAACAGAGAAAGAAAAGGCAAAAGACTGGTTTGTTTG",
+     "indel": -2,
+     "wt": false,
+     "details": [
+      {
+       "label": "g2",
+       "value": -2
+      }
+     ]
+    },
+    {
+     "rel": 0.06,
+     "seq": "GGCAATTCAATAAATAAATAAAATA|-GAAGGGGGAGTGAAACAGAGAAAGAAAAGGCAAAAGACTGGTTTGTTTG",
+     "indel": -1,
+     "wt": false,
+     "details": [
+      {
+       "label": "g2",
+       "value": -1
+      }
+     ]
+    },
+    {
+     "rel": 0.03,
+     "seq": "GGCAATTCAATAAATAAATAAAA--|AGAAGGGGGAGTGAAACAGAGAAAGAAAAGGCAAAAGACTGGTTTGTTTG",
+     "indel": -2,
+     "wt": false,
+     "details": [
+      {
+       "label": "g2",
+       "value": -2
+      }
+     ]
+    },
+    {
+     "rel": 0.03,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCGT|-TATGGCAATTCAATAAATAAATAAAATA|-GAAGGGGGAGTGAAACAGAGAAAG",
+     "indel": -2,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -1
+      },
+      {
+       "label": "g2",
+       "value": -1
+      }
+     ]
+    },
+    {
+     "rel": 0.02,
+     "seq": "GGCAATTCAA---------------|--------------AACAGAGAAAGAAAAGGCAAAAGACTGGTTTGTTTG",
+     "indel": -29,
+     "wt": false,
+     "details": [
+      {
+       "label": "g2",
+       "value": -29
+      }
+     ]
+    },
+    {
+     "rel": 0.01,
+     "seq": "GGCAATTCAATAAATA---------|--------------------GAAAGAAAAGGCAAAAGACTGGTTTGTTTG",
+     "indel": -29,
+     "wt": false,
+     "details": [
+      {
+       "label": "g2",
+       "value": -29
+      }
+     ]
+    },
+    {
+     "rel": 0.01,
+     "seq": "GGCAA--------------------|---------AGTGAAACAGAGAAAGAAAAGGCAAAAGACTGGTTTGTTTG",
+     "indel": -29,
+     "wt": false,
+     "details": [
+      {
+       "label": "g2",
+       "value": -29
+      }
+     ]
+    }
+   ],
+   "outcomes": {
+    "0": 31.0,
+    "-29": 23.0,
+    "1": 15.0,
+    "-1": 15.0,
+    "-2": 15.0
+   }
+  },
+  "nr2f2_ha_hdr_pool": {
+   "summary": {
+    "ice": 68,
+    "mean_discord_before": 0.033,
+    "mean_discord_after": 0.447,
+    "ice_d": 57,
+    "rsq": 0.99,
+    "hdr_pct": 28.999999999999996,
+    "ko_score": 39.0,
+    "notes": "",
+    "status": "succeeded"
+   },
+   "contribs": [
+    {
+     "rel": 0.31,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCGT|ATATGGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": 0,
+     "wt": true,
+     "details": []
+    },
+    {
+     "rel": 0.29,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCcT|ATATGGCAATTCAAgcagctaaagccaaaaacaaccagggatccggaggc",
+     "indel": "hdr",
+     "wt": false,
+     "details": [
+      {
+       "label": "hdr",
+       "value": "hdr"
+      }
+     ]
+    },
+    {
+     "rel": 0.13,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCGT|-TATGGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": -1,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -1
+      }
+     ]
+    },
+    {
+     "rel": 0.08,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCGT|nATATGGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGA",
+     "indel": 1,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": 1
+      }
+     ]
+    },
+    {
+     "rel": 0.07,
+     "seq": "GGCAATTCAATAAATAAATAAAATA|--AAGGGGGAGTGAAACAGAGAAAGAAAAGGCAAAAGACTGGTTTGTTTG",
+     "indel": -2,
+     "wt": false,
+     "details": [
+      {
+       "label": "g2",
+       "value": -2
+      }
+     ]
+    },
+    {
+     "rel": 0.07,
+     "seq": "GGCAATTCAATAAATAAATAAAA--|AGAAGGGGGAGTGAAACAGAGAAAGAAAAGGCAAAAGACTGGTTTGTTTG",
+     "indel": -2,
+     "wt": false,
+     "details": [
+      {
+       "label": "g2",
+       "value": -2
+      }
+     ]
+    },
+    {
+     "rel": 0.02,
+     "seq": "GGCAATTCAATAAATAAATAAAATA|-GAAGGGGGAGTGAAACAGAGAAAGAAAAGGCAAAAGACTGGTTTGTTTG",
+     "indel": -1,
+     "wt": false,
+     "details": [
+      {
+       "label": "g2",
+       "value": -1
+      }
+     ]
+    },
+    {
+     "rel": 0.01,
+     "seq": "GGCAATTCAATAAATAAATAAAAT-|-GAAGGGGGAGTGAAACAGAGAAAGAAAAGGCAAAAGACTGGTTTGTTTG",
+     "indel": -2,
+     "wt": false,
+     "details": [
+      {
+       "label": "g2",
+       "value": -2
+      }
+     ]
+    },
+    {
+     "rel": 0.01,
+     "seq": "GGCAATTCAATAAATAAATAAAATA|nAGAAGGGGGAGTGAAACAGAGAAAGAAAAGGCAAAAGACTGGTTTGTTT",
+     "indel": 1,
+     "wt": false,
+     "details": [
+      {
+       "label": "g2",
+       "value": 1
+      }
+     ]
+    }
+   ],
+   "outcomes": {
+    "0": 31.0,
+    "hdr": 29.0,
+    "-1": 15.0,
+    "1": 9.0,
+    "-2": 15.0
+   }
+  },
+  "nr2f2_ha_hdr_clone_het": {
+   "summary": {
+    "ice": 48,
+    "mean_discord_before": 0.035,
+    "mean_discord_after": 0.364,
+    "ice_d": 45,
+    "rsq": 0.99,
+    "hdr_pct": 48.0,
+    "ko_score": 0.0,
+    "notes": "",
+    "status": "succeeded"
+   },
+   "contribs": [
+    {
+     "rel": 0.51,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCGT|ATATGGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": 0,
+     "wt": true,
+     "details": []
+    },
+    {
+     "rel": 0.48,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCcT|ATATGGCAATTCAAgcagctaaagccaaaaacaaccagggatccggaggc",
+     "indel": "hdr",
+     "wt": false,
+     "details": [
+      {
+       "label": "hdr",
+       "value": "hdr"
+      }
+     ]
+    }
+   ],
+   "outcomes": {
+    "0": 51.0,
+    "hdr": 48.0
+   }
+  },
+  "nr2f2_ha_hdr_clone_hom": {
+   "summary": {
+    "ice": 100,
+    "mean_discord_before": 0.035,
+    "mean_discord_after": 0.696,
+    "ice_d": 91,
+    "rsq": 1.0,
+    "hdr_pct": 100.0,
+    "ko_score": 0.0,
+    "notes": "",
+    "status": "succeeded"
+   },
+   "contribs": [
+    {
+     "rel": 1.0,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCcT|ATATGGCAATTCAAgcagctaaagccaaaaacaaccagggatccggaggc",
+     "indel": "hdr",
+     "wt": false,
+     "details": [
+      {
+       "label": "hdr",
+       "value": "hdr"
+      }
+     ]
+    }
+   ],
+   "outcomes": {
+    "hdr": 100.0
+   }
+  },
+  "apoe_snp_hdr_pool": {
+   "summary": {
+    "ice": 82,
+    "mean_discord_before": 0.04,
+    "mean_discord_after": 0.279,
+    "ice_d": 34,
+    "rsq": 1.0,
+    "hdr_pct": 50.0,
+    "ko_score": 32.0,
+    "notes": "",
+    "status": "succeeded"
+   },
+   "contribs": [
+    {
+     "rel": 0.5,
+     "seq": "TCCTCCGCGATGCCGATGACCTcCA|aAAGtGCCTGGCtGTcTACCAGGCCGGGGCCCGCGAGGGCGCCGAGCGCG",
+     "indel": "hdr",
+     "wt": false,
+     "details": [
+      {
+       "label": "hdr",
+       "value": "hdr"
+      }
+     ]
+    },
+    {
+     "rel": 0.18,
+     "seq": "TCCTCCGCGATGCCGATGACCTGCA|GAAGCGCCTGGCAGTGTACCAGGCCGGGGCCCGCGAGGGCGCCGAGCGCG",
+     "indel": 0,
+     "wt": true,
+     "details": []
+    },
+    {
+     "rel": 0.15,
+     "seq": "TCCTCCGCGATGCCGATGACCTGCA|-AAGCGCCTGGCAGTGTACCAGGCCGGGGCCCGCGAGGGCGCCGAGCGCG",
+     "indel": -1,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -1
+      }
+     ]
+    },
+    {
+     "rel": 0.08,
+     "seq": "CCGATGACCTGCAGAAGCGCCTG--|--TGTACCAGGCCGGGGCCCGCGAGGGCGCCGAGCGCGGCCTCAGCGCCA",
+     "indel": -4,
+     "wt": false,
+     "details": [
+      {
+       "label": "g2",
+       "value": -4
+      }
+     ]
+    },
+    {
+     "rel": 0.07,
+     "seq": "TCCTCCGCGATGCCGATGACCTGCA|nGAAGCGCCTGGCAGTGTACCAGGCCGGGGCCCGCGAGGGCGCCGAGCGC",
+     "indel": 1,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": 1
+      }
+     ]
+    },
+    {
+     "rel": 0.02,
+     "seq": "CCGATGACCTGCAGAAGCGCCTGGC|nAGTGTACCAGGCCGGGGCCCGCGAGGGCGCCGAGCGCGGCCTCAGCGCC",
+     "indel": 1,
+     "wt": false,
+     "details": [
+      {
+       "label": "g2",
+       "value": 1
+      }
+     ]
+    }
+   ],
+   "outcomes": {
+    "hdr": 50.0,
+    "0": 18.0,
+    "-1": 15.0,
+    "-4": 8.0,
+    "1": 9.0
+   }
+  },
+  "apoe_snp_clone_het": {
+   "summary": {
+    "ice": 54,
+    "mean_discord_before": 0.039,
+    "mean_discord_after": 0.043,
+    "ice_d": 3,
+    "rsq": 1.0,
+    "hdr_pct": 54.0,
+    "ko_score": 0.0,
+    "notes": "",
+    "status": "succeeded"
+   },
+   "contribs": [
+    {
+     "rel": 0.54,
+     "seq": "TCCTCCGCGATGCCGATGACCTcCA|aAAGtGCCTGGCtGTcTACCAGGCCGGGGCCCGCGAGGGCGCCGAGCGCG",
+     "indel": "hdr",
+     "wt": false,
+     "details": [
+      {
+       "label": "hdr",
+       "value": "hdr"
+      }
+     ]
+    },
+    {
+     "rel": 0.46,
+     "seq": "TCCTCCGCGATGCCGATGACCTGCA|GAAGCGCCTGGCAGTGTACCAGGCCGGGGCCCGCGAGGGCGCCGAGCGCG",
+     "indel": 0,
+     "wt": true,
+     "details": []
+    }
+   ],
+   "outcomes": {
+    "hdr": 54.0,
+    "0": 46.0
+   }
+  },
+  "apoe_snp_clone_hom": {
+   "summary": {
+    "ice": 100,
+    "mean_discord_before": 0.042,
+    "mean_discord_after": 0.046,
+    "ice_d": 5,
+    "rsq": 1.0,
+    "hdr_pct": 100.0,
+    "ko_score": 0.0,
+    "notes": "",
+    "status": "succeeded"
+   },
+   "contribs": [
+    {
+     "rel": 1.0,
+     "seq": "TCCTCCGCGATGCCGATGACCTcCA|aAAGtGCCTGGCtGTcTACCAGGCCGGGGCCCGCGAGGGCGCCGAGCGCG",
+     "indel": "hdr",
+     "wt": false,
+     "details": [
+      {
+       "label": "hdr",
+       "value": "hdr"
+      }
+     ]
+    }
+   ],
+   "outcomes": {
+    "hdr": 100.0
+   }
+  },
+  "apoe_snp_clone_partial_het": {
+   "summary": {
+    "ice": 93,
+    "mean_discord_before": 0.04,
+    "mean_discord_after": 0.045,
+    "ice_d": 4,
+    "rsq": 1.0,
+    "hdr_pct": 93.0,
+    "ko_score": 0.0,
+    "notes": "",
+    "status": "succeeded"
+   },
+   "contribs": [
+    {
+     "rel": 0.93,
+     "seq": "TCCTCCGCGATGCCGATGACCTcCA|aAAGtGCCTGGCtGTcTACCAGGCCGGGGCCCGCGAGGGCGCCGAGCGCG",
+     "indel": "hdr",
+     "wt": false,
+     "details": [
+      {
+       "label": "hdr",
+       "value": "hdr"
+      }
+     ]
+    },
+    {
+     "rel": 0.07,
+     "seq": "TCCTCCGCGATGCCGATGACCTGCA|GAAGCGCCTGGCAGTGTACCAGGCCGGGGCCCGCGAGGGCGCCGAGCGCG",
+     "indel": 0,
+     "wt": true,
+     "details": []
+    }
+   ],
+   "outcomes": {
+    "hdr": 93.0,
+    "0": 7.0
+   }
+  },
+  "nr2f2_rev_ko_pool_g1": {
+   "summary": {
+    "ice": 72,
+    "mean_discord_before": 0.034,
+    "mean_discord_after": 0.53,
+    "ice_d": 70,
+    "rsq": 0.98,
+    "hdr_pct": 0,
+    "ko_score": 53.0,
+    "notes": "",
+    "status": "succeeded"
+   },
+   "contribs": [
+    {
+     "rel": 0.26,
+     "seq": "TTATTTATTTATTGAATTGCCATAT|ACGGCCAGTTAAAACTGCTGCCGGACAGTAACATATCCCGGATGAGGGTT",
+     "indel": 0,
+     "wt": true,
+     "details": []
+    },
+    {
+     "rel": 0.26,
+     "seq": "TTATTTATTTATTGAATTGCCATAT|nACGGCCAGTTAAAACTGCTGCCGGACAGTAACATATCCCGGATGAGGGT",
+     "indel": 1,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": 1
+      }
+     ]
+    },
+    {
+     "rel": 0.11,
+     "seq": "TTATTTATTTATTGAATTGCCATAT|-CGGCCAGTTAAAACTGCTGCCGGACAGTAACATATCCCGGATGAGGGTT",
+     "indel": -1,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -1
+      }
+     ]
+    },
+    {
+     "rel": 0.09,
+     "seq": "TTATTTATTTATTGAATTGCCATA-|ACGGCCAGTTAAAACTGCTGCCGGACAGTAACATATCCCGGATGAGGGTT",
+     "indel": -1,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -1
+      }
+     ]
+    },
+    {
+     "rel": 0.06,
+     "seq": "TTATTTATTTATTGAATTGCCATAT|---GCCAGTTAAAACTGCTGCCGGACAGTAACATATCCCGGATGAGGGTT",
+     "indel": -3,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -3
+      }
+     ]
+    },
+    {
+     "rel": 0.05,
+     "seq": "TTATTTATTTATTGAATTG------|------AGTTAAAACTGCTGCCGGACAGTAACATATCCCGGATGAGGGTT",
+     "indel": -12,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -12
+      }
+     ]
+    },
+    {
+     "rel": 0.03,
+     "seq": "TTATTTATTTATTGAATTGCCATAT|-------GTTAAAACTGCTGCCGGACAGTAACATATCCCGGATGAGGGTT",
+     "indel": -7,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -7
+      }
+     ]
+    },
+    {
+     "rel": 0.03,
+     "seq": "TTATTTATTTATTGAATTGCCATA-|--GGCCAGTTAAAACTGCTGCCGGACAGTAACATATCCCGGATGAGGGTT",
+     "indel": -3,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -3
+      }
+     ]
+    },
+    {
+     "rel": 0.03,
+     "seq": "TTATTTATTTATTGAATTGCCATA-|------AGTTAAAACTGCTGCCGGACAGTAACATATCCCGGATGAGGGTT",
+     "indel": -7,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -7
+      }
+     ]
+    },
+    {
+     "rel": 0.02,
+     "seq": "TTATTTATTTATTGAATTGCCATAT|------------AACTGCTGCCGGACAGTAACATATCCCGGATGAGGGTT",
+     "indel": -12,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -12
+      }
+     ]
+    },
+    {
+     "rel": 0.02,
+     "seq": "TTATTTATTTATTGAATTGCCATA-|-----------AAACTGCTGCCGGACAGTAACATATCCCGGATGAGGGTT",
+     "indel": -12,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -12
+      }
+     ]
+    },
+    {
+     "rel": 0.01,
+     "seq": "TTATTTATTTATTGAATTGCCA---|----CCAGTTAAAACTGCTGCCGGACAGTAACATATCCCGGATGAGGGTT",
+     "indel": -7,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -7
+      }
+     ]
+    },
+    {
+     "rel": 0.01,
+     "seq": "TTATTTATTTATTGAATTGCC----|--------TTAAAACTGCTGCCGGACAGTAACATATCCCGGATGAGGGTT",
+     "indel": -12,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -12
+      }
+     ]
+    }
+   ],
+   "outcomes": {
+    "0": 26.0,
+    "1": 26.0,
+    "-1": 20.0,
+    "-3": 9.0,
+    "-12": 10.0,
+    "-7": 7.0
+   }
+  },
+  "nr2f2_artifact_null": {
+   "summary": {
+    "ice": 0,
+    "mean_discord_before": 0.035,
+    "mean_discord_after": 0.056,
+    "ice_d": 1,
+    "rsq": 1.0,
+    "hdr_pct": 0,
+    "ko_score": 0.0,
+    "notes": "Inf. window after cutsite is only 31 in length and is less than 3x indel_max_size of 20",
+    "status": "succeeded"
+   },
+   "contribs": [
+    {
+     "rel": 1.0,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCGT|ATATGGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": 0,
+     "wt": true,
+     "details": []
+    }
+   ],
+   "outcomes": {
+    "0": 100.0
+   }
+  },
+  "nr2f2_artifact_ko_het": {
+   "summary": {
+    "ice": 50,
+    "mean_discord_before": 0.034,
+    "mean_discord_after": 0.317,
+    "ice_d": 39,
+    "rsq": 0.99,
+    "hdr_pct": 0,
+    "ko_score": 49.0,
+    "notes": "Inf. window after cutsite is only 31 in length and is less than 3x indel_max_size of 20",
+    "status": "succeeded"
+   },
+   "contribs": [
+    {
+     "rel": 0.49,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCGT|ATATGGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": 0,
+     "wt": true,
+     "details": []
+    },
+    {
+     "rel": 0.49,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCGT|-TATGGCAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": -1,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -1
+      }
+     ]
+    },
+    {
+     "rel": 0.01,
+     "seq": "TCCGGCAGCAGTTTTAACTGGCCGT|------CAATTCAATAAATAAATAAAATAAGAAGGGGGAGTGAAACAGAG",
+     "indel": -6,
+     "wt": false,
+     "details": [
+      {
+       "label": "g1",
+       "value": -6
+      }
+     ]
+    }
+   ],
+   "outcomes": {
+    "0": 49.0,
+    "-1": 49.0,
+    "-6": 1.0
+   }
+  },
+  "apoe_noisy_snp_het": {
+   "summary": {
+    "ice": 53,
+    "mean_discord_before": 0.064,
+    "mean_discord_after": 0.065,
+    "ice_d": 4,
+    "rsq": 1.0,
+    "hdr_pct": 53.0,
+    "ko_score": 0.0,
+    "notes": "",
+    "status": "succeeded"
+   },
+   "contribs": [
+    {
+     "rel": 0.53,
+     "seq": "TCCTCCGCGATGCCGATGACCTcCA|aAAGtGCCTGGCtGTcTACCAGGCCGGGGCCCGCGAGGGCGCCGAGCGCG",
+     "indel": "hdr",
+     "wt": false,
+     "details": [
+      {
+       "label": "hdr",
+       "value": "hdr"
+      }
+     ]
+    },
+    {
+     "rel": 0.47,
+     "seq": "TCCTCCGCGATGCCGATGACCTGCA|GAAGCGCCTGGCAGTGTACCAGGCCGGGGCCCGCGAGGGCGCCGAGCGCG",
+     "indel": 0,
+     "wt": true,
+     "details": []
+    }
+   ],
+   "outcomes": {
+    "hdr": 53.0,
+    "0": 47.0
+   }
+  },
+  "apoe_noisy_snp_hom": {
+   "summary": {
+    "ice": 100,
+    "mean_discord_before": 0.064,
+    "mean_discord_after": 0.068,
+    "ice_d": 5,
+    "rsq": 1.0,
+    "hdr_pct": 100.0,
+    "ko_score": 0.0,
+    "notes": "",
+    "status": "succeeded"
+   },
+   "contribs": [
+    {
+     "rel": 1.0,
+     "seq": "TCCTCCGCGATGCCGATGACCTcCA|aAAGtGCCTGGCtGTcTACCAGGCCGGGGCCCGCGAGGGCGCCGAGCGCG",
+     "indel": "hdr",
+     "wt": false,
+     "details": [
+      {
+       "label": "hdr",
+       "value": "hdr"
+      }
+     ]
+    }
+   ],
+   "outcomes": {
+    "hdr": 100.0
+   }
+  }
+ }
+}

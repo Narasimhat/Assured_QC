@@ -1,0 +1,36 @@
+# Release notes
+
+## 0.3.0 (preview, in progress)
+
+- Functional knockout assessment (`src/coding.js`, `src/genbank.js`): with a GenBank gene record, each allele is placed in the coding sequence and translated; premature stops are judged by the exon-junction rules for nonsense-mediated decay, truncations by the share of protein kept and essential regions lost, early stops by downstream in-frame ATGs, splice-site edits as exon skipping versus intron retention, plus start loss, stop loss and in-frame changes. A clone call (predicted knockout, with caveats, not a knockout, uncertain), a functional knockout score with interval and a list of confirming experiments (Western blot, RT-qPCR, RT-PCR) are added to the table, report, CSV and decision layer. A knockout is accepted only when the call is a predicted knockout without caveats. The prediction is not calibrated on protein measurements (`docs/functional-knockout.md`).
+- Design file: a design written by the design app for a knockout or deletion carries a `coding` block (gene region and coding exons); the functional assessment then runs without a second GenBank upload (`docs/design-handoff.md`). A gene record given with the traces takes precedence.
+- Pre-cut discordance warning: for knockout and deletion designs it now looks at the 40 bases next to the cut instead of the whole alignment window, so a base-calling shift early in the read no longer warns; designs that read donor markers keep the whole window. Warnings on 160 laboratory clones fall from 46 to 29, estimates are unchanged; the warning did not predict knockout error before or after, and flagged all 3 SNP overcalls (one locus) under both rules (`docs/discordance-warning.md`).
+- Calibration of the functional call: `node cli/assured-qc.mjs calibrate results.json observations.csv` scores the calls against protein (and RNA) results with Wilson intervals, by call and by allele class (`src/calibration.js`, `docs/calibration.md`, template `docs/calibration-template.csv`). No protein data have been used yet; thresholds are unchanged.
+- Marker-level response: investigated on 45 real SNP clones and not added (`docs/marker-response-notes.md`); the effect appears at one locus and the allele fit already absorbs it. Real-data guard unchanged (knockout readout MAE 2.88, 3 SNP overcalls).
+- The earlier knockout score is relabelled the frameshift score (proxy) and is unchanged; without a gene record nothing else changes.
+- Command line: `--genbank`, `--transcript`, `--regions`, `--epitope`; the gene record file name and SHA-256 are written to `run.json`. Start page: optional GenBank file with essential regions and antibody epitope.
+- Tests: 29 added (record parser, strand handling, window location, independent translation check, NMD rules, splice sites, start loss, isoforms, decision, report, command line, design-file coding block, calibration, discordance warning).
+
+## 0.2.0 (preview)
+
+- Engine: unknown-base insertions to 10 bp; adaptive search for large deletions (31-250 bp, either cut or spanning), donor edit carrying an indel as its own allele; gated unpenalised refit and background baseline (only when the fit is good); joint fit of forward and reverse reads with a per-read agreement flag.
+- Every result has profile-likelihood intervals (edited, wild type, intended edit, knockout score), a "could hide up to" bound, and a confidence tier derived from the interval width. The old any-warning flag did not predict errors (AUC 0.5); interval width does (AUC 0.8-0.9 on the development set).
+- Decision layer: accept, hold, re-sequence or reject, with reasons; plate report (8x12) and re-sequence list. A held-out run found that an in-frame 18-base deletion between the cuts was accepted as a knockout; fixed and tested.
+- Sample sheet and automatic pairing (167 of 172 real files correct, the 5 errors flagged low confidence), design-report import, zero-configuration start page with a worker pool, publication figure (SVG, PNG at 300 dpi).
+- Command line (`cli/assured-qc.mjs`) with worker threads, run provenance (input SHA-256, parameters).
+- Other nucleases (SpCas9, NG, SaCas9, Cas12a, SpRY), cut-site discovery from traces and a base-editing workflow (per-position conversion): checked on simulated traces only.
+- Benchmark harness (`bench/`): simulator from real control peaks, adapters for ICE, peaksplit and Assured_TraceEdit, a scorer frozen before use, the known-mixture wet-lab protocol (not run). Held-out results in `docs/results.md`, including the criteria that were not met.
+- 107 engine tests. The browser interface could not be built or viewed in the development environment (the bundler cannot run there); the production build and the tests pass in CI (Node 20), but nobody has looked at the interface in a browser yet.
+
+## 0.1.0 (preview)
+
+- Five workflows: knockout, deletion between cuts, SNP correction, small tag knock-in, large tag or reporter knock-in (junction reads and out-out band sizes).
+- Design hand-off file (`assured-qc-design/1`) from the design app, or manual entry of guides and donor.
+- Allele deconvolution with separate reporting of intended edit and blocking-changes-only conversion; clone genotype calls.
+- HTML report and CSV table downloads; analysis runs in a web worker, files never leave the browser.
+- Synthetic validation set and comparison against Synthego ICE 1.2.0 (`docs/validation.md`).
+- Warning when the control and edited traces already differ before the cut (threshold 0.25, provisional); refusal of swapped, truncated and mismatched pairs. 68 engine tests.
+- A control whose own signal is mixed (for example after a homopolymer run) is reported as such, with the position where the mixing starts and the run in the design, instead of as the wrong design (`src/diagnose.js`). Found on real reads from a project locus, where an (A)20 run upstream of the start codon turned every read mixed.
+- Run on 172 laboratory control/edited pairs (12 sets, 160 clones, 12 pools) against ICE 1.2.0 and against direct chromatogram readouts (`docs/validation.md`, the clone-level table (not published)). Two failures found and fixed: a read with a poorly called start was refused although most of it aligned, and a complex pool was reported as 4% edited because the unexplained signal was renormalised away (new `unexplained` column in the table, report and CSV). 72 engine tests.
+- A trace start that differs from the control by fewer than 10 bases is no longer listed as a warning (it was present in most pairs). `scripts/run_batch.mjs` runs a batch from the command line with the same engine and report as the web app.
+- Known limits: three-guide multiplex headline differs from ICE on the one example tested; no sequencing-confirmed genotypes yet; poor traces remain the main source of error; at most two alleles per clone.

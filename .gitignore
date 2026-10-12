@@ -1,0 +1,10 @@
+node_modules
+dist
+.env
+.env.local
+.DS_Store
+probe*.mjs
+bench/config.json
+bench/__pycache__/
+*.pyc
+docs/known-mixture-key.csv

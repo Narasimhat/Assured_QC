@@ -1,0 +1,68 @@
+{
+ "frozen_at_utc": "2026-10-09T12:20:37Z",
+ "purpose": "Engine state used for the held-out scoring on set2 (seed 20261010). No engine change after this file was written is covered by the reported results.",
+ "tests": "20 files, 107 pass, 0 fail",
+ "engine_sha256": {
+  "abif.js": "1f994a5c9021ff0aa1974f3a76b5fb02344e9455e633bfca91bf0a1431a6d159",
+  "align.js": "26043b060e8872f81d2b0d3cac0e16d1e3059bf09b2f26a6a9e60ab10ba224c1",
+  "alleleLibrary.js": "7b873bf05aa052138b92c4dc59cca257452f3e15a7b7c37e35b5118b0b3be198",
+  "analyze.js": "586701eb0d6ae2dde5321394f270dc82a5a04aa8606dc27ed3bc6ddd42d00275",
+  "baseEdit.js": "55e47dd4f9d40296cbeb714b1fc6fe03224225b08d09f62690c3048d25fa8406",
+  "batch.js": "a94df38a2962a2460ad4209f81f9df4e801a83ae4d62ca7be25e0ea5c3f87229",
+  "charts.js": "75876d98a70efa1880c22184fa4b20aa3768bab5ce16674a4d0670dec957d45d",
+  "cutDiscovery.js": "26c21acffdbd9bbfdd1fd28604c58ba89dd1a8b9afdcf5bdd0b27f6e597d3902",
+  "decision.js": "417cd036a75eb9db70417f21e5e1e76353cd17edb47793ecd02c51e55ad966a8",
+  "decompose.js": "185b2c5489c4d01ccf21c804f7055ced23e3f825e9addacd4dcb5bcb2ef52c54",
+  "designReport.js": "c377e55e08b0c1d7baede36822e3ca5409d8016b3da7299c4a9d804d324ed86c",
+  "designSpec.js": "513d5c109cb4b1bc80f6c4aa9a5e77c595c7c34e31cd145c1751b0cafc6b9ea7",
+  "diagnose.js": "200f9b4b5a7795d9e6806578c5a77c0038432f890c449ea726411935f728aad3",
+  "figure.js": "4add53b5948a0d0931ac97ce13d092e6b98848e845dfac90379dcaee9afb6053",
+  "genotype.js": "9613b5c5ccc3f8bc7fd1bbe0f5ec0dbaf53be78b151c4ffb947a3481e986fa2b",
+  "junction.js": "760963f847dca0f29ef0877d729f4b8f86f9bbc28fa0de993c2596b986bfb10c",
+  "manualSpec.js": "dce2378ad6996849a44b53235aed910824cca28024d2172940e4b8f62160478e",
+  "nnls.js": "166975bb243c21a1e54d3f4d61e5b40cb2c2a843be9b2c46c32cf8a3de8b2416",
+  "nucleases.js": "566102814e21e89f659539a1f55e612dab95690e07e9e28950745d2a9cadee2e",
+  "plateReport.js": "eb36287e960aea41936482f1a1d56e8fd79f68beac4f949ee3a985a46842c06c",
+  "prepare.js": "8b7cb1f6b2ec7ce8ee8da8868c8db937dec34462ff9e3416393127b5e063e7b8",
+  "pursuit.js": "87f576ce8eeabb861ed1944431dd514857da2d1dd0bc9f1a4325eac6eb942019",
+  "quick.js": "8db277f40bba84a7990b1a9cf85c3a9b04245c2f07979b44753542e305855fb1",
+  "reliability.js": "9282dae369b1bc80d2f1fa8d7f23d0e453ab358e6302cde21713be0ffa541b69",
+  "report.js": "2d7a0c40a7f28c651fb8e9f530476619f517012bac69d1b7358d1ee40f905f7e",
+  "runJobs.js": "f9d142910a5d06db5ce02df57d8f4cca766b910426a61a33c62dc0f0ec92f5e2",
+  "seq.js": "a4c29906e74d34a253d875278e28d6d22de85154d22ab8d82989218b39e455ff",
+  "sheet.js": "8cf4faa682dfe7190224ddd07679bd652b5baccb28353e6d1090b6fb21679646",
+  "traceModel.js": "b8bedae65ce5621e1ff4f70df6ee7e4ff4d507ed0310e775d59c1a66993adbf1",
+  "uncertainty.js": "1589e78dbf61f3521618114b85cdbad816f858e86016bc5a83d0ba0b6ddb1763",
+  "worker.js": "1b6dab495cad916cceee5f0444c648bbb10f0b5f328388de780927111af6fe0e"
+ },
+ "changed_after_scoring": {
+  "files": {
+   "decision.js": "1d8b724b4d35c55ae00c567a0ee7a7b1a15bc29ea2cae138c1deafc91fd4f9d0",
+   "markerHeights.js": "2eb266ce88416b047f8bae1133b1e6763b5f47e5b73738c1a4d6733a84b6462e"
+  },
+  "note": "src/decision.js: an in-frame deletion between the cuts shorter than 21 bases is no longer accepted as a knockout (found by the held-out run). No change to the numerical engine; the decision numbers in docs/results.md are after this fix, and the held-out set had 1 false accept of 201 clones before it. src/markerHeights.js was added and is not used by the engine (probe only, bench/marker_probe.mjs)."
+ },
+ "scorer_sha256": "e50766ce93dae0c3aeea9dd9877f118149855000ff9cfd55622e234b9b1ebb24",
+ "frozen_scorecard_record": {
+  "frozen_at": "2026-10-09T10:52:56",
+  "files": {
+   "bench/score.py": "e50766ce93dae0c3aeea9dd9877f118149855000ff9cfd55622e234b9b1ebb24",
+   "bench/simulate.py": "a260e40634a66feafce6798d5d0e90465425ebbdc32e6616956963f808b8fd54",
+   "bench/simlib.py": "cb5a3ab37459e8d6d7b277201503f5bbe0992b27349f4e9919d864e71e4676fd",
+   "docs/scorecard.md": "bb24f238e5d439b1d48da23e7f90d197f146641f13e1e5cc7a06772e36817728",
+   "bench/adapters.py": "9232c724f8f3657c1d023c5bcb0c519e5e6cdf081bd7e46562368dd9dee9136b"
+  },
+  "jobs_set1_sha256": "c3554699f79366fd72b2e72e5f6afeccfa28b2fd9884a504a9115bc5b132b1b2",
+  "dev_projects": [
+   "L07_SNP_editing",
+   "L01_KO_SNP_editing",
+   "L02_KO_SNP_editing",
+   "L09_Exn20_SNP_editing",
+   "L04_KO_SNP_editing",
+   "L11_SNP_editing"
+  ],
+  "amendments": []
+ },
+ "matches_FROZEN_json": true,
+ "public_copy_note": "Locus names in the scorecard record are replaced by codes in this public copy; engine source files are unchanged, so engine_sha256 matches the repository. scorer_sha256 is the hash of the original bench/score.py."
+}

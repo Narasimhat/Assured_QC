@@ -1,0 +1,15 @@
+family,assured_qc,ice,peaksplit,traceedit,n_traces
+compound_het,0.22,2.5,3.6,0.0,6
+hdr_graded,3.48,2.54,2.39,7.86,28
+hdr_with_indel,3.05,10.09,4.5,12.57,11
+hom_or_het_small_indel,0.96,1.0,2.93,1.45,39
+large_deletion,1.27,43.17,9.35,1.32,12
+low_fraction_indel,0.27,2.11,2.56,1.11,9
+mixed_alleles,3.65,4.62,3.41,19.26,8
+noisy,3.77,3.59,9.27,11.96,22
+partial_conversion,5.43,34.92,36.26,8.32,12
+pool,0.68,2.16,4.02,0.35,6
+two_cut_graded,0.51,1.48,2.67,0.98,21
+two_cut_junction_shift,0.33,0.67,1.4,0.61,6
+two_cut_plus_indel,0.18,1.83,0.92,0.5,6
+wt,0.65,0.14,3.8,1.64,21

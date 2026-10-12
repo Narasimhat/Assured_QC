@@ -1,0 +1,24 @@
+{
+ "n_analysed": 206,
+ "n_total": 207,
+ "coverage_edited": 0.9611650485436893,
+ "width_edited_median": 10.700000000000003,
+ "coverage_intended": 0.8080808080808081,
+ "width_intended_median": 10.0,
+ "n_intended": 99,
+ "coverage_ko": 0.9514563106796117,
+ "width_ko_median": 5.9,
+ "detected_flag_FP_wt": 0.0,
+ "n_wt": 21,
+ "clones": 201,
+ "worthy_clones": 27,
+ "true_accepts": 27,
+ "false_accepts": 0,
+ "resequence_rate": 0.30845771144278605,
+ "decision_counts": {
+  "reject": 83,
+  "re-sequence": 62,
+  "hold": 29,
+  "accept": 27
+ }
+}
