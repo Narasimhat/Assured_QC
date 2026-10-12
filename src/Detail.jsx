@@ -1,4 +1,6 @@
 import { headline } from "./batch.js";
+import { cloneProteinFigure } from "./proteinFigure.js";
+import { saveSvg, savePng } from "./saveFigure.js";
 
 const pct = (value) => (value === null || value === undefined ? "n/a" : `${(value * 100).toFixed(1)}%`);
 
@@ -51,6 +53,12 @@ export default function Detail({ workflow, result }) {
               <tr key={x.label + x.fraction}><td>{x.label}</td><td>{pct(x.fraction)}</td><td>{x.summary}</td><td>{x.lof === true ? "yes" : x.lof === false ? "no" : "uncertain"}</td></tr>
             ))}</tbody>
           </table>
+          {(() => { const svg = cloneProteinFigure(result); return svg ? (
+            <div>
+              <div className="chart" dangerouslySetInnerHTML={{ __html: svg }} />
+              <p><button type="button" className="link" onClick={() => saveSvg(`${result.name}_protein_products.svg`, svg)}>Protein products (SVG)</button><button type="button" className="link" onClick={() => savePng(`${result.name}_protein_products_300dpi.png`, svg)}>Protein products (PNG, 300 dpi)</button></p>
+            </div>
+          ) : null; })()}
           <p className="muted">Predicted from sequence only. Nonsense-mediated decay follows the exon-junction rules (a stop in the last coding exon, within 55 nt of the last junction, within 150 nt of the start codon, or in a coding exon over 407 nt escapes); these rules fail for roughly a third of premature stops. A knockout is confirmed by loss of protein.</p>
           {result.functional.caveats.length > 0 && <ul>{result.functional.caveats.map((c) => <li key={c}>{c}</li>)}</ul>}
           {result.functional.confirm.length > 0 && <><p><b>To confirm</b></p><ul>{result.functional.confirm.map((c) => <li key={c}>{c}</li>)}</ul></>}

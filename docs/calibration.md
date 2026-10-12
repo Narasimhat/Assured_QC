@@ -14,3 +14,5 @@ The report gives, for each call, how many clones had no protein, with Wilson 95%
 
 The report does not change any threshold. With fewer than about 20 clones the intervals are wide and the report says so; a threshold should only be moved when a class has enough clones to show a rule is wrong,
 and the change should then be tested on clones that were not used to choose it.
+
+The same table (`sample`, `protein`, optional `rna`) can be given to `run` or `recommend` with `--observations`: a clone whose protein is absent is then accepted, one whose protein is present is rejected (`docs/recommendation.md`).

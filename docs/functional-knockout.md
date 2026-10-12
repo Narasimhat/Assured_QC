@@ -67,9 +67,21 @@ In the decision layer a knockout is accepted only for `predicted_knockout`; ever
 - Only the sequence in the record is modelled: a large deletion on the other allele that removes a primer site, or an off-target event, appears as apparent homozygosity and cannot be seen here.
 - The thresholds (truncation 0.5 and 0.9, reinitiation 300 nt and 60%) are defaults chosen from the literature, not fitted to data; no laboratory protein measurements have been used to calibrate this score.
 
+## Predicted protein products (figure)
+
+Before a Western blot the question is which antibody can tell "no protein" from "a shorter protein". `src/proteinFigure.js` draws the predicted products of the alleles on the protein, from the allele table above, and shades the stretches where an epitope would see every product or the full-length protein only.
+
+- A premature stop gives the residues kept before the first changed residue (solid), then the frameshifted tail up to the stop (hatched; dashed outline where NMD is expected or borderline, so the product may not be made), with its length and a calculated mass (about 0.11 kDa per residue; real gels run differently).
+- An in-frame change gives the protein minus the removed residues. A splice-site loss gives its two outcomes: exon skipping (the residues encoded before the skipped exon are kept) and intron retention. Alleles that give the same product are one row.
+- Alleles without a drawable product (start codon lost, no stop codon, all coding exons deleted) are listed as text. Wild-type and synonymous alleles draw nothing.
+- Marked regions (`--regions`) and coding exons are drawn above the products. An epitope given with `--epitope` is drawn as a dashed box with the number of products that keep it.
+- Orange stretch: an epitope inside it sees every product shown (so "no band" means nothing is made). Purple stretch: an epitope inside it sees the full-length protein only (a shorter product stays invisible). Residues are numbered in the protein of the gene record; vendors usually give UniProt numbers, which can differ by an offset when the isoforms differ.
+
+Where it appears: under the allele table of each sample in the browser (SVG and 300 dpi PNG buttons) and in the HTML report, as `protein_products.svg` for the whole run (command line) and as a download after a run in the browser. It is a prediction from sequence, not a measurement.
+
 ## Tests
 
-`test/coding.test.js` (record parser, plus- and minus-strand records, window location, stop positions against an independent translation, in-frame and last-exon rules, splice sites, start loss, isoforms, clone call), `test/coding-integration.test.js` (frameshift score unchanged without a record, agreement with an independent translation on the NR2F2 fixtures, decision, report and CSV) and `test/cli-gene.test.js` (command line end to end).
+`test/coding.test.js` (record parser, plus- and minus-strand records, window location, stop positions against an independent translation, in-frame and last-exon rules, splice sites, start loss, isoforms, clone call), `test/coding-integration.test.js` (frameshift score unchanged without a record, agreement with an independent translation on the NR2F2 fixtures, decision, report and CSV) and `test/cli-gene.test.js` (command line end to end) and `test/protein-figure.test.js` (the figure of predicted products).
 
 ## References
 

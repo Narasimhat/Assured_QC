@@ -54,6 +54,7 @@ test("command line: a design file with a coding block gives the functional asses
   const results = JSON.parse(readFileSync(path.join(out, "results.json"), "utf8")); assert.equal(results.length, 1);
   assert.ok(results[0].functional, "functional assessment from the design file"); assert.equal(results[0].functional.call.status, "predicted_knockout");
   const run = JSON.parse(readFileSync(path.join(out, "run.json"), "utf8")); assert.equal(run.geneRecord.file, "coding block of the design file"); assert.match(run.geneRecord.sha256, /^[0-9a-f]{64}$/);
+  const svg = readFileSync(path.join(out, "protein_products.svg"), "utf8"); assert.match(svg, /^<svg /); assert.match(svg, /Full-length protein/); assert.match(svg, /aa, about [\d.]+ kDa/); assert.ok(!/<script/i.test(svg), "the run figure is written next to the report");
 });
 
 test("design file written by the design app (with a coding block) is accepted and gives a coding context", () => {
@@ -72,4 +73,8 @@ test("command line: calibrate scores the functional calls of a run against a pro
   const report = path.join(dir, "calibration.md"); assert.equal(await cli(["calibrate", path.join(out, "results.json"), obs, "--out", report]), 0);
   const text = readFileSync(report, "utf8"); assert.match(text, /2 clones with a protein result/); assert.match(text, /predicted_knockout/);
   const parsed = JSON.parse(readFileSync(path.join(dir, "calibration.json"), "utf8")); assert.equal(parsed.knockoutCall.called, 1); assert.equal(parsed.knockoutCall.confirmed, 1);
+  // the same table decides the clones: protein absent accepts the knockout, protein present rejects the clone that carries wild type
+  const rec = path.join(dir, "rec.csv"); assert.equal(await cli(["recommend", path.join(out, "results.json"), "--observations", obs, "--out", rec]), 0);
+  const recJson = JSON.parse(readFileSync(path.join(dir, "rec.json"), "utf8")); const by = Object.fromEntries(recJson.map((r) => [r.name, r]));
+  assert.equal(by["NR2F2_A01_hom.700"].decision.decision, "accept"); assert.equal(by["NR2F2_A01_hom.700"].recommendation.priority, "confirmed"); assert.equal(by["NR2F2_A02_het.700"].decision.decision, "reject");
 });
