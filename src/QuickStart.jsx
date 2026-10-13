@@ -219,7 +219,7 @@ export default function QuickStart() {
             </tbody></table>
           </div>
           {result && <div className="card"><p><b>{LABEL[result.decision.decision]}.</b> {result.decision.reasons.join(" ")} <span className="muted">{result.decision.next}</span></p>
-            {recommendation && recommendation.priority !== "none" && <p><b>{/^KO score/.test(recommendation.basis || "") ? "KO score" : "Knockout support"} {recommendation.score} ({recommendation.tier}).</b> {recommendation.action} <span className="muted">{recommendation.why.join(" | ")}{recommendation.flags.length ? ` Note: ${recommendation.flags.join("; ")}.` : ""} The weights behind the support are provisional; only a protein result settles a knockout.</span></p>}
+            {recommendation && recommendation.priority !== "none" && <p><b>{/^KO score/.test(recommendation.basis || "") ? "KO score" : /^HDR score/.test(recommendation.basis || "") ? "HDR score, lower bound" : "Knockout support"} {recommendation.score} ({recommendation.tier}).</b> {recommendation.action} <span className="muted">{recommendation.why.join(" | ")}{recommendation.flags.length ? ` Note: ${recommendation.flags.join("; ")}.` : ""} The weights behind the support are provisional; only a protein result settles a knockout.</span></p>}
             <p><button type="button" className="link" disabled={figureBusy || !result.ok} onClick={() => figure("svg")}>Figure (SVG)</button><button type="button" className="link" disabled={figureBusy || !result.ok} onClick={() => figure("png")}>Figure (PNG, 300 dpi)</button></p></div>}
           {result && <Detail workflow={outcome.workflow} result={result} />}
         </>

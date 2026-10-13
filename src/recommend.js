@@ -74,7 +74,7 @@ export function supportOf(result, options = {}) {
     return { score, basis: "KO score (frameshift or an indel of 21 bp or more, as in ICE; no gene record, so the effect on the protein is not modelled)", tier: score >= 90 ? "likely" : score >= 50 ? "possible" : "unsupported", alleles: [], mechanism: { splice: false, nmd: false } };
   }
   const iv = result.intervals || {}; const s = result.summary || {}; const score = Math.round(iv.intendedEditPct ? iv.intendedEditPct[0] : (s.intendedEditPct ?? 0));
-  return { score, basis: "intended edit, lower bound of the interval", tier: score >= 85 ? "firm" : score >= 50 ? "likely" : score >= 20 ? "possible" : "unsupported", alleles: [], mechanism: { splice: false, nmd: false } };
+  return { score, basis: "HDR score (intended edit), lower bound of the 95% interval", tier: score >= 85 ? "firm" : score >= 50 ? "likely" : score >= 20 ? "possible" : "unsupported", alleles: [], mechanism: { splice: false, nmd: false } };
 }
 
 const natural = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true });
