@@ -13,12 +13,17 @@ import { alignedGroups, clonesAlignedFigure, clonesAlignmentFigure } from "./ali
 import { cloneSelectionFigure } from "./selectionFigure.js";
 import { saveSvg, savePng, savePdf } from "./saveFigure.js";
 import { NUCLEASES } from "./nucleases.js";
+import { readIceExport, compareWithExport, looksLikeIceSummary } from "./iceImport.js";
+import { iceSectionHtml, iceCsv, iceScatterSvg, iceSummary, iceStatusText } from "./iceCompare.js";
 import Detail from "./Detail.jsx";
 
 const LABEL = { accept: "Accept", hold: "Hold", "re-sequence": "Sequence again", reject: "Reject" };
 const download = (name, data, type) => { const url = URL.createObjectURL(new Blob([data], { type })); const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000); };
 const arrayBufferOf = (file) => file.arrayBuffer();
 const interval = (iv) => (iv ? `${iv[0]}-${iv[1]}%` : "");
+const alleleText = (list) => list.map((a) => `${a.size > 0 ? "+" : ""}${a.size} (${Math.round(a.share * 100)}%)`).join(", ");
+// the zip of an ICE export, or a summary .csv of one: these are results to compare with, not traces or a sample sheet
+const isIceExport = async (f) => /\.zip$/i.test(f.name) || (/\.csv$/i.test(f.name) && looksLikeIceSummary(await f.slice(0, 4000).text()));
 
 export default function QuickStart() {
   const filePicker = useRef(null); const folderPicker = useRef(null); const designPicker = useRef(null);
@@ -29,17 +34,29 @@ export default function QuickStart() {
   const [outcome, setOutcome] = useState(null); const [picked, setPicked] = useState(0); const [panel, setPanel] = useState(0); const [figureBusy, setFigureBusy] = useState(false); const [error, setError] = useState("");
   const [dragging, setDragging] = useState(false);
   const [designIndex, setDesignIndex] = useState(0);
+  const [iceExport, setIceExport] = useState(null); const [iceProblems, setIceProblems] = useState([]);
 
+  const loadIce = async (list) => {
+    const given = Array.from(list); if (!given.length) return;
+    try {
+      const read = await readIceExport(await Promise.all(given.map(async (f) => ({ name: f.name, bytes: new Uint8Array(await f.arrayBuffer()) }))));
+      setIceExport(read.rows.length ? read : null); setIceProblems(read.problems);
+    } catch (e) { setIceExport(null); setIceProblems([`Could not read the ICE results: ${e.message || e}`]); }
+  };
   const addFiles = async (list) => {
     if (running) return;
     try {
       setError("");
       const duplicates = [];
       const seen = new Set(files.current.keys());
-      const incoming = Array.from(list).filter((f) => {
+      const candidates = Array.from(list).filter((f) => {
         if (/\.(ab1|abi)$/i.test(f.name) && seen.has(f.name)) { duplicates.push(f.name); return false; }
         seen.add(f.name); return true;
       });
+      const iceFiles = [], incoming = [];
+      for (const f of candidates) (await isIceExport(f) ? iceFiles : incoming).push(f);
+      if (iceFiles.length) await loadIce(iceFiles);
+      if (!incoming.length && !duplicates.length) return;
       const kinds = classifyFiles(incoming.map((f) => f.name));
       incoming.forEach((f) => { files.current.set(f.name, f); buffers.current.delete(f.name); });
       setTraceNames((previous) => Array.from(new Set([...previous, ...kinds.traces]))); setPairsEdit({}); setOutcome(null);
@@ -83,6 +100,8 @@ export default function QuickStart() {
   const alignedList = ranked ? alignedGroups(ranked).map((items) => ({ items, grid: clonesAlignmentFigure(items), stack: items.length <= 48 ? clonesAlignedFigure(items) : "" })) : [];
   const PRIORITY_LABEL = { first: "carry forward", confirmed: "confirmed", reserve: "reserve", duplicate: "backup", caution: "protein still made", not_recommended: "not recommended", discard: "discard", resequence: "sequence again" };
   const stamp = new Date().toISOString().slice(0, 10);
+  const iceView = outcome && iceExport ? compareWithExport({ tasks: outcome.tasks, results: outcome.results, rows: iceExport.rows }) : null;
+  const iceMeta = iceExport ? { imported: true, source: iceExport.sources.join(", ") } : {}; const iceSvg = iceView ? iceScatterSvg(iceView.rows) : ""; const iceCounts = iceView ? iceSummary(iceView.rows) : null;
   const figure = async (format) => {
     if (!outcome || !result || !result.ok) return; setFigureBusy(true);
     try {
@@ -204,7 +223,7 @@ export default function QuickStart() {
           ))}
             {panelOf(ranked).length > 0 && <p>Carry forward first: <b>{panelOf(ranked).join(", ")}</b> <span className="muted">{outcome.workflow === "knockout" || outcome.workflow === "deletion" ? "(ranked by how strongly the sequence predicts loss of protein; best clone of each genotype)" : "(ranked by the lower bound of the intended-edit interval; clones of one genotype count separately)"}</span></p>}
           <p>
-            <button type="button" className="link" onClick={() => download(`assured_qc_${stamp}.html`, buildQcReportHtml({ workflow: outcome.workflow, results: ranked, notes: outcome.problems }), "text/html")}>Report (HTML)</button>
+            <button type="button" className="link" onClick={() => download(`assured_qc_${stamp}.html`, buildQcReportHtml({ workflow: outcome.workflow, results: ranked, notes: outcome.problems, extraHtml: iceView ? iceSectionHtml(iceView.rows, iceMeta) : "" }), "text/html")}>Report (HTML)</button>
             <button type="button" className="link" onClick={() => download(`assured_qc_${stamp}.csv`, buildResultsCsv(outcome.workflow, ranked), "text/csv")}>Table (CSV)</button>
             <button type="button" className="link" onClick={() => download(`assured_qc_plate_${stamp}.html`, buildPlateReportHtml({ title: "Plate", results: ranked }), "text/html")}>Plate view (HTML)</button>
             <button type="button" className="link" onClick={() => download(`assured_qc_resequence_${stamp}.csv`, resequenceListCsv(outcome.results), "text/csv")}>Re-sequence list (CSV)</button>
@@ -215,6 +234,31 @@ export default function QuickStart() {
             {runFigure && <button type="button" className="link" onClick={() => download(`assured_qc_protein_products_${stamp}.svg`, runFigure, "image/svg+xml")}>Protein products (SVG)</button>}
             {runFigure && <button type="button" className="link" onClick={() => savePdf(`assured_qc_protein_products_${stamp}.pdf`, runFigure)}>Protein products (PDF)</button>}
           </p>
+          <details className="aligned" open={Boolean(iceView || iceProblems.length)}>
+            <summary><b>Compare with ICE (optional)</b>{iceView ? ` (${iceView.rows.length} sample${iceView.rows.length === 1 ? "" : "s"})` : ""}</summary>
+            <p className="muted">Run the same samples in the ICE web tool with the same guides, download the results and add the zip (or its summary .csv) here. Samples are matched to ICE's labels by name. ICE changes no call, rank or score in this report. Scores can differ between ICE versions.</p>
+            <p><input type="file" accept=".zip,.csv" aria-label="ICE results" onChange={(e) => { loadIce(e.target.files); e.target.value = ""; }} /></p>
+            {iceProblems.length > 0 && <p className="error">{iceProblems.join(" ")}</p>}
+            {iceView && (
+              <>
+                <p className="chips"><span className="chip">Agree {iceCounts.agree}</span><span className="chip">ICE fit poor {iceCounts.ice_fit_poor}</span><span className="chip">Differ {iceCounts.differ}</span>{iceCounts.ice_failed > 0 && <span className="chip">Failed {iceCounts.ice_failed}</span>}{iceCounts.not_run > 0 && <span className="chip">No ICE result {iceCounts.not_run}</span>}</p>
+                {iceView.problems.length > 0 && <p className="muted">{iceView.problems.join(" ")}</p>}
+                {iceSvg && <div className="scroll" dangerouslySetInnerHTML={{ __html: iceSvg }} />}
+                <div className="scroll">
+                  <table><thead><tr><th>Sample</th><th>Assured QC (95% interval)</th><th>ICE</th><th>ICE fit R&sup2;</th><th>Alleles ICE reports</th><th>Status</th><th>Note</th></tr></thead><tbody>
+                    {iceView.rows.map((r) => (
+                      <tr key={r.sample}><td>{r.sample}</td><td>{r.app ?? ""}{r.appInterval ? ` (${r.appInterval[0]}-${r.appInterval[1]})` : ""}</td><td>{r.ice ?? ""}</td><td>{r.iceR2 === null ? "" : r.iceR2.toFixed(2)}</td><td>{alleleText(r.iceAlleles)}</td><td>{iceStatusText(r.status)}</td><td>{r.note}</td></tr>
+                    ))}
+                  </tbody></table>
+                </div>
+                <p>
+                  <button type="button" className="link" onClick={() => download(`assured_qc_ice_comparison_${stamp}.csv`, iceCsv(iceView.rows), "text/csv")}>ICE comparison (CSV)</button>
+                  {iceSvg && <button type="button" className="link" onClick={() => saveSvg(`assured_qc_ice_comparison_${stamp}.svg`, iceSvg)}>ICE comparison plot (SVG)</button>}
+                  {iceSvg && <button type="button" className="link" onClick={() => savePdf(`assured_qc_ice_comparison_${stamp}.pdf`, iceSvg)}>ICE comparison plot (PDF)</button>}
+                </p>
+              </>
+            )}
+          </details>
           <div className="scroll">
             <table><thead><tr><th>Decision</th><th>Sample</th><th>Result</th><th>Edited, 95% interval</th><th>Confidence</th><th>Priority</th></tr></thead><tbody>
               {outcome.results.map((r, i) => (

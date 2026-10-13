@@ -1,4 +1,5 @@
-// Comparison with Synthego ICE, run separately on the same traces (command line: --ice <ICE folder>).
+// Comparison with ICE, either Synthego's open-source ICE run separately on the same traces (command line: --ice <ICE folder>) or the results
+// exported from the ICE web tool (command line --ice-results, or the file box under the results in the browser; see iceImport.js).
 // ICE is a comparator only: it changes no call, rank, score or figure of Assured QC. A comparison is reported as agree, differ, or ICE fit poor
 // (ICE's own guidance is that R squared below 0.8 should be read with caution, and a score from a poor fit is not comparable), with the alleles
 // that Assured QC reads and ICE does not place. ICE takes one donor per run, so a point edit or small tag is run once per donor and the best donor is shown.
@@ -86,6 +87,7 @@ export function compareWithIce(r, iceRuns, skipReason = "") {
   } else if (close) { row.status = "agree"; row.note = ""; }
   else { row.status = "differ"; row.note = `The scores differ by ${Math.abs(row.difference)} points with a sound ICE fit (R\u00b2 ${row.iceR2 === null ? "n/a" : row.iceR2.toFixed(2)}): look at the trace before relying on either.` + (row.missing.length ? ` Assured QC reads ${sizeList(row.missing)}, which ICE does not place.` : ""); }
   if (!knock && row.donor && good.length > 1) row.note = (row.note ? row.note + " " : "") + `Best of ${good.length} donors run one at a time (${good.map((x) => `${x.donorName}: ${Math.round(valueOf(x))}`).join(", ")}).`;
+  if (best.warning) row.note = (row.note ? row.note + " " : "") + best.warning; // a remark that came with the ICE result (imported results: other guides, ICE's own note)
   return row;
 }
 
@@ -164,7 +166,10 @@ export function iceScatterSvg(rows, { title = "Assured QC against ICE" } = {}) {
 export function iceSectionHtml(rows, meta = {}) {
   if (!rows.length) return "";
   const s = iceSummary(rows); const svg = iceScatterSvg(rows);
-  const head = `<h2>Comparison with ICE</h2><p class="muted">ICE ${esc(meta.version || "")} run separately on the same traces${meta.python ? ` (Python ${esc(meta.python)})` : ""}. It changes no call, rank or score: ${s.agree} agree, ${s.ice_fit_poor} with a poor ICE fit, ${s.differ} differ${s.ice_failed ? `, ${s.ice_failed} failed` : ""}${s.not_run ? `, ${s.not_run} not run` : ""}. A score from an ICE fit with R\u00b2 below ${ICE_FIT_OK} is not comparable; the alleles ICE does not place are named. For a point edit or tag ICE is run once per donor and the best donor is shown. ICE is used under its research and non-profit licence.</p>`;
+  const who = meta.imported
+    ? `Results exported from the ICE web tool${meta.source ? ` (${esc(meta.source)})` : ""}, read in without running ICE again`
+    : `ICE ${esc(meta.version || "")} run separately on the same traces${meta.python ? ` (Python ${esc(meta.python)})` : ""}`;
+  const head = `<h2>Comparison with ICE</h2><p class="muted">${who}. It changes no call, rank or score: ${s.agree} agree, ${s.ice_fit_poor} with a poor ICE fit, ${s.differ} differ${s.ice_failed ? `, ${s.ice_failed} failed` : ""}${s.not_run ? `, ${s.not_run} not run` : ""}. A score from an ICE fit with R\u00b2 below ${ICE_FIT_OK} is not comparable; the alleles ICE does not place are named. For a point edit or tag ICE takes one donor per run and the best donor is shown. The ICE version matters: the open-source ICE 1.2.0 and the current ICE web tool can give different scores for the same traces.${meta.imported ? "" : " ICE is used under its research and non-profit licence."}</p>`;
   const body = rows.map((r) => `<tr><td>${esc(r.sample)}</td><td>${r.app ?? ""}${r.appInterval ? ` (${r.appInterval[0]}&ndash;${r.appInterval[1]})` : ""}</td><td>${r.ice ?? ""}</td><td>${r.iceR2 === null ? "" : r.iceR2.toFixed(2)}</td><td>${esc(iceStatusText(r.status))}</td><td>${esc(r.note)}</td></tr>`).join("");
   return `${head}${svg ? `<div style="overflow-x:auto">${svg}</div>` : ""}<table><tr><th>Sample</th><th>Assured QC (95% interval)</th><th>ICE</th><th>ICE fit R&sup2;</th><th>Status</th><th>Note</th></tr>${body}</table>`;
 }

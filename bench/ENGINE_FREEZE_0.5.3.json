@@ -1,18 +1,19 @@
 {
   "frozen_at_utc": "2026-10-13T12:00:00Z",
-  "purpose": "Engine state of Assured QC 0.5.3 as tagged. 0.5.3 adds the optional comparison with Synthego ICE on the command line (src/iceCompare.js, cli/ice-runner.mjs, scripts/run_ice_plan.py); no estimate, interval, call, decision or figure layout changes.",
+  "purpose": "Engine state of Assured QC 0.5.3 as tagged. 0.5.3 adds the optional comparison with ICE: results exported from the ICE web tool (browser and command line, src/iceImport.js) and the open-source ICE 1.2.0 run on the command line (src/iceCompare.js, cli/ice-runner.mjs, scripts/run_ice_plan.py); no estimate, interval, call, decision or figure layout changes.",
   "supersedes": "bench/ENGINE_FREEZE_0.5.2.json, which is left unchanged",
   "files_changed_since_previous_freeze": [
     "report.js"
   ],
   "files_added_since_previous_freeze": [
-    "iceCompare.js"
+    "iceCompare.js",
+    "iceImport.js"
   ],
-  "tests": "33 files, 210 pass, 0 fail (cli-runner.test.js excluded locally; CI runs it)",
+  "tests": "34 files, 218 pass, 0 fail (cli-runner.test.js excluded locally; CI runs it)",
   "no_regression": {
     "files_byte_identical_to_0_5_2": 44,
     "of": 45,
-    "note": "report.js (an optional extra section and the version string) differs; no estimation, ranking or figure-drawing file changed, so estimates, intervals, decisions and SVG output are identical to 0.5.2 when --ice is not used. On a real knockout plate and a real two-donor SNP plate the Assured QC output was unchanged with ICE results added."
+    "note": "report.js (an optional extra section and the version string) differs; no estimation, ranking or figure-drawing file changed, so estimates, intervals, decisions and SVG output are identical to 0.5.2 when no ICE results are given. On a real knockout plate and a real two-donor SNP plate the Assured QC output was unchanged with ICE results added (ICE 1.2.0 run locally, and, for the knockout plate, an export of the ICE web tool: results.csv and recommendation.csv byte-identical with and without it)."
   },
   "engine_sha256": {
     "abif.js": "1f994a5c9021ff0aa1974f3a76b5fb02344e9455e633bfca91bf0a1431a6d159",
@@ -35,7 +36,8 @@
     "figure.js": "4add53b5948a0d0931ac97ce13d092e6b98848e845dfac90379dcaee9afb6053",
     "genbank.js": "6b314070962be5210c9c324eabbfa320099190f52087052a6cec0ea30ac4a6f0",
     "genotype.js": "9613b5c5ccc3f8bc7fd1bbe0f5ec0dbaf53be78b151c4ffb947a3481e986fa2b",
-    "iceCompare.js": "ef9a0eeb0a360229995259a9d518c84c7efb3af30dc918c6b567c408cb1a423e",
+    "iceCompare.js": "2e9aef80bfc42bf102e8391dd6e1535d440bdc8d2058517604f25e2ed1603425",
+    "iceImport.js": "b3f88214f1129cefc6741726c76f77e60c89d262325119d46e0a6bd20220a1b3",
     "junction.js": "760963f847dca0f29ef0877d729f4b8f86f9bbc28fa0de993c2596b986bfb10c",
     "manualSpec.js": "3f804cb30704d8cb9d9ee9a048b16baac4d2fffa5f75c12f7d67a3eff478f7fe",
     "markerHeights.js": "2eb266ce88416b047f8bae1133b1e6763b5f47e5b73738c1a4d6733a84b6462e",
