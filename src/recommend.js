@@ -24,7 +24,8 @@ export const RISK_DEFAULTS = {
   crypticSplice: 0.10,      // added to a splice-site loss: a cryptic site could give a third product
   maxSplice: 0.90,
 };
-export const RECOMMEND_DEFAULTS = { panel: 3, minAllele: 0.05, risk: RISK_DEFAULTS };
+// panel: clones to carry forward first; a knockout takes one per genotype (three), a wanted edit has replicates of one genotype (up to six)
+export const RECOMMEND_DEFAULTS = { panel: 3, panelEdit: 6, minAllele: 0.05, risk: RISK_DEFAULTS };
 
 const TIERS = [[0.2, "firm"], [0.35, "likely"], [0.55, "possible"], [Infinity, "unsupported"]];
 const tierOf = (maxRisk) => TIERS.find(([limit]) => maxRisk <= limit)[1];
@@ -102,6 +103,7 @@ export function recommendClones(results, options = {}) {
     const knock = r.workflow === "knockout" || r.workflow === "deletion"; const unsupported = !confirmed && !against && support.tier === "unsupported";
     return { r, support, label, flags, confirmed, against, knock, unsupported, gkey: knock ? label : `sample:${r.name}`, quality: flags.some((f) => /trace quality/.test(f)) ? 1 : 0, nAlleles: alleles.length || 9 };
   });
+  const panelSize = options.panel !== undefined && options.panel !== null ? options.panel : (info.some((x) => x && !x.knock) ? opt.panelEdit : opt.panel);
   const out = results.map(() => ({ rank: null, score: null, basis: "", tier: "", tierText: "", priority: "none", action: "", why: [], testWith: [], flags: [], group: "", groupOf: 0, duplicateOf: null }));
   const eligible = []; 
   info.forEach((x, i) => {
@@ -126,7 +128,7 @@ export function recommendClones(results, options = {}) {
     if (x.against) { o.priority = "caution"; o.action = `Protein measured (${x.r.confirmation.protein}): a protein is still made. Test whether it is functional, or choose another clone.`; return; }
     if (seen.has(x.gkey)) { const rep = seen.get(x.gkey); o.priority = "duplicate"; o.duplicateOf = info[rep].r.name; o.action = `Same genotype as ${info[rep].r.name}: keep as a backup, test only if that clone fails.`; return; }
     seen.set(x.gkey, i); reps += 1; const accepted = x.r.decision.decision === "accept";
-    if (reps <= opt.panel) { o.priority = "first"; o.action = x.knock ? (accepted ? "Carry forward; confirm the protein as routine." : "Carry forward and test first (best clone of its genotype).") : (accepted ? "Carry forward: one of the best clones carrying the wanted edit." : "Carry forward after checking the flagged points (see the reasons): the genotype is usable but not the cleanest."); }
+    if (reps <= panelSize) { o.priority = "first"; o.action = x.knock ? (accepted ? "Carry forward; confirm the protein as routine." : "Carry forward and test first (best clone of its genotype).") : (accepted ? "Carry forward: one of the best clones carrying the wanted edit." : "Carry forward after checking the flagged points (see the reasons): the genotype is usable but not the cleanest."); }
     else { o.priority = "reserve"; o.action = x.knock ? "Reserve: test if the first-choice clones fail." : "Reserve: the next best clone carrying the wanted edit; use it if a first-choice clone fails."; }
   });
   const sizeOf = new Map(); info.forEach((x) => { if (x) sizeOf.set(x.gkey, (sizeOf.get(x.gkey) || 0) + 1); }); info.forEach((x, i) => { if (x) out[i].groupOf = sizeOf.get(x.gkey); });

@@ -9,6 +9,8 @@ import { tally, DECISION_ORDER } from "./decision.js";
 import { withRecommendations, recommendationCsv, panelOf } from "./recommend.js";
 import { runProteinFigure } from "./proteinFigure.js";
 import { runSummaryFigure } from "./summaryFigure.js";
+import { alignedGroups, clonesAlignedFigure, clonesAlignmentFigure } from "./alignedFigure.js";
+import { cloneSelectionFigure } from "./selectionFigure.js";
 import { saveSvg, savePng } from "./saveFigure.js";
 import { NUCLEASES } from "./nucleases.js";
 import Detail from "./Detail.jsx";
@@ -24,7 +26,7 @@ export default function QuickStart() {
   const [traceNames, setTraceNames] = useState([]); const [sheetText, setSheetText] = useState(""); const [designText, setDesignText] = useState(""); const [designName, setDesignName] = useState(""); const [geneText, setGeneText] = useState(""); const [geneName, setGeneName] = useState(""); const [regionsText, setRegionsText] = useState(""); const [epitopeText, setEpitopeText] = useState("");
   const [guidesText, setGuidesText] = useState(""); const [donorText, setDonorText] = useState(""); const [nuclease, setNuclease] = useState("SpCas9"); const [typeOverride, setTypeOverride] = useState(""); const [goal, setGoal] = useState("homozygous");
   const [pairsEdit, setPairsEdit] = useState({}); const [running, setRunning] = useState(false); const [progress, setProgress] = useState(null);
-  const [outcome, setOutcome] = useState(null); const [picked, setPicked] = useState(0); const [figureBusy, setFigureBusy] = useState(false); const [error, setError] = useState("");
+  const [outcome, setOutcome] = useState(null); const [picked, setPicked] = useState(0); const [panel, setPanel] = useState(0); const [figureBusy, setFigureBusy] = useState(false); const [error, setError] = useState("");
   const [dragging, setDragging] = useState(false);
   const [designIndex, setDesignIndex] = useState(0);
 
@@ -77,7 +79,8 @@ export default function QuickStart() {
   };
 
   const result = outcome ? outcome.results[picked] : null; const counts = outcome ? tally(outcome.results.map((r) => r.decision)) : null;
-  const runFigure = outcome ? runProteinFigure(outcome.results) : ""; const ranked = outcome ? withRecommendations(outcome.results) : null; const summaryFigure = ranked ? runSummaryFigure(ranked) : ""; const recommendation = ranked && ranked[picked] ? ranked[picked].recommendation : null;
+  const runFigure = outcome ? runProteinFigure(outcome.results) : ""; const koRun = outcome ? outcome.workflow === "knockout" || outcome.workflow === "deletion" : false; const panelAuto = koRun ? 3 : 6; const ranked = outcome ? withRecommendations(outcome.results, panel ? { panel } : {}) : null; const selectionSvg = ranked ? cloneSelectionFigure(ranked) : ""; const summaryFigure = ranked ? runSummaryFigure(ranked) : ""; const recommendation = ranked && ranked[picked] ? ranked[picked].recommendation : null;
+  const alignedList = ranked ? alignedGroups(ranked).map((items) => ({ items, grid: clonesAlignmentFigure(items), stack: items.length <= 48 ? clonesAlignedFigure(items) : "" })) : [];
   const PRIORITY_LABEL = { first: "carry forward", confirmed: "confirmed", reserve: "reserve", duplicate: "backup", caution: "protein still made", not_recommended: "not recommended", discard: "discard", resequence: "sequence again" };
   const stamp = new Date().toISOString().slice(0, 10);
   const figure = async (format) => {
@@ -117,7 +120,7 @@ export default function QuickStart() {
         <p>Design: <b>{designName}</b> <button type="button" disabled={running} onClick={() => { setDesignName(""); setDesignText(""); setDesignIndex(0); setOutcome(null); setError(""); }}>Remove design</button></p>
         {design.error ? <p className="error">{design.error} Replace or remove this file to continue.</p> : design.kind === "report" ? <>
           {design.designs.length > 1 && <><label htmlFor="q-design-choice">Design in this report</label><select id="q-design-choice" disabled={running} value={designIndex} onChange={(e) => { setDesignIndex(Number(e.target.value)); setOutcome(null); }}>{design.designs.map((d, i) => <option key={i} value={i}>{d.title}</option>)}</select></>}
-          <p>Imported {design.label}: {design.guides.length} guides, {design.donors.length} donors.</p>
+          <p>Imported {design.label}: {design.guides.length} guides, {design.donors.length} donors.{design.donors.filter((d) => d.recommended).length > 1 ? ` The ${design.donors.filter((d) => d.recommended).length} recommended donors are used together.` : ""}</p>
           <ul>{design.chosen.guides.map((g) => <li key={g.sequence}>{g.name}: <code>{g.sequence}</code></li>)}</ul>
           {!traceNames.length && <p className="muted">Design ready. Add the control and sample AB1 files above to start analysis.</p>}
         </> : design.kind === "spec" ? <p>Imported {design.label}.</p> : <p className="note">The design is empty or could not be read. Replace or remove it to continue.</p>}
@@ -169,7 +172,33 @@ export default function QuickStart() {
           <h2>Decisions</h2>
           <p className="chips">{DECISION_ORDER.map((k) => <span key={k} className={`chip d-${k.replace("-", "")}`}>{LABEL[k]} {counts[k]}</span>)}</p>
           {summaryFigure && <div className="scroll" dangerouslySetInnerHTML={{ __html: summaryFigure }} />}
-            {panelOf(ranked).length > 0 && <p>Carry forward first: <b>{panelOf(ranked).join(", ")}</b> <span className="muted">(ranked by how strongly the sequence predicts loss of protein; best clone of each genotype)</span></p>}
+          {selectionSvg && (
+            <details open className="aligned">
+              <summary><b>Clone selection</b></summary>
+              <p className="muted">From the design to the clones to take forward: the guides, cuts and designed changes over the chromatograms of those clones, and a table of all clones.</p>
+              <p><label>Clones to carry forward first <input type="number" min="1" max="48" value={panel || panelAuto} onChange={(e) => setPanel(Math.max(0, Math.min(48, Math.round(Number(e.target.value)) || 0)))} style={{ width: "4em" }} /></label> <span className="muted">({koRun ? "a knockout takes one clone per genotype" : "clones of one genotype are replicates, so up to six"}; the ranking itself does not change)</span></p>
+              <div className="scroll" dangerouslySetInnerHTML={{ __html: selectionSvg }} />
+              <p>
+                <button type="button" className="link" onClick={() => saveSvg(`assured_qc_clone_selection_${stamp}.svg`, selectionSvg)}>Clone selection (SVG)</button>
+                <button type="button" className="link" onClick={() => savePng(`assured_qc_clone_selection_${stamp}_300dpi.png`, selectionSvg)}>Clone selection (PNG)</button>
+              </p>
+            </details>
+          )}
+          {alignedList.map((g, gi) => (
+            <details key={gi} className="aligned">
+              <summary><b>All clones aligned with the wild-type control</b>{alignedList.length > 1 ? ` (design group ${gi + 1}, ${g.items.length} samples)` : ` (${g.items.length} samples)`}</summary>
+              <p className="muted">Best clone first, on the same stretch of the control read. Base calls first, then the chromatograms{g.stack ? "" : " (not drawn above 48 clones)"}.</p>
+              <div className="scroll" dangerouslySetInnerHTML={{ __html: g.grid }} />
+              {g.stack && <div className="scroll" dangerouslySetInnerHTML={{ __html: g.stack }} />}
+              <p>
+                <button type="button" className="link" onClick={() => saveSvg(`assured_qc_clones_alignment_${stamp}.svg`, g.grid)}>Base-call alignment (SVG)</button>
+                <button type="button" className="link" onClick={() => savePng(`assured_qc_clones_alignment_${stamp}_300dpi.png`, g.grid)}>Base-call alignment (PNG)</button>
+                {g.stack && <button type="button" className="link" onClick={() => saveSvg(`assured_qc_clones_aligned_${stamp}.svg`, g.stack)}>Chromatograms (SVG)</button>}
+                {g.stack && <button type="button" className="link" onClick={() => savePng(`assured_qc_clones_aligned_${stamp}_300dpi.png`, g.stack)}>Chromatograms (PNG)</button>}
+              </p>
+            </details>
+          ))}
+            {panelOf(ranked).length > 0 && <p>Carry forward first: <b>{panelOf(ranked).join(", ")}</b> <span className="muted">{outcome.workflow === "knockout" || outcome.workflow === "deletion" ? "(ranked by how strongly the sequence predicts loss of protein; best clone of each genotype)" : "(ranked by the lower bound of the intended-edit interval; clones of one genotype count separately)"}</span></p>}
           <p>
             <button type="button" className="link" onClick={() => download(`assured_qc_${stamp}.html`, buildQcReportHtml({ workflow: outcome.workflow, results: ranked, notes: outcome.problems }), "text/html")}>Report (HTML)</button>
             <button type="button" className="link" onClick={() => download(`assured_qc_${stamp}.csv`, buildResultsCsv(outcome.workflow, ranked), "text/csv")}>Table (CSV)</button>

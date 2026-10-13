@@ -48,7 +48,39 @@ function fitAlign(query, reference) {
 
 export { locateGuide } from "./nucleases.js";
 
-export function specFromControl({ control, guides, donor = "", gene = "sample", minArm = 15, nuclease = "SpCas9", cutIndices = [] }) {
+/**
+ * Spec from the control read, the guides and the donor. `donor` is one sequence, or a list of donors (strings or { name, sequence }) that are used
+ * together: ssODNs that each carry the edit and the blocking changes of their own guide. For point changes the markers of all donors are merged;
+ * a marker carried by every donor is the intended change, one carried by some is a blocking change, and each donor lists the markers it carries.
+ */
+export function specFromControl(input) {
+  const list = Array.isArray(input.donor) ? input.donor.map((d) => (typeof d === "string" ? { name: "", sequence: d } : d)).filter((d) => d && cleanDna(d.sequence)) : null;
+  if (!list) return specFromControlOne(input);
+  if (list.length <= 1) return specFromControlOne({ ...input, donor: list[0] ? list[0].sequence : "" });
+  const parts = list.map((d) => specFromControlOne({ ...input, donor: d.sequence }));
+  const failed = parts.find((p) => p.error); if (failed) return { error: failed.error };
+  const hasBlock = (p) => p.spec.donors.some((d) => (d.insertBp || 0) > 0 || (d.replacedBp || 0) > 0);
+  if (parts.some(hasBlock)) return { spec: parts[0].spec, warnings: [...(parts[0].warnings || []), "Several donors are used together only for point changes; this design has an insert or a replacement, so only the first donor was used."] };
+  const spec = parts[0].spec; const warnings = []; const merged = new Map();
+  for (const [i, p] of parts.entries()) {
+    for (const m of p.spec.markers) {
+      const seen = merged.get(m.pos);
+      if (seen && seen.alt !== m.alt) return { error: `The donors disagree at position ${m.pos}: ${seen.alt} in one and ${m.alt} in another.` };
+      merged.set(m.pos, seen ? { ...seen, carriedBy: seen.carriedBy + 1 } : { ...m, carriedBy: 1 });
+    }
+    (p.warnings || []).forEach((w) => { if (!warnings.includes(w)) warnings.push(w); });
+    const donor = p.spec.donors[0];
+    if (donor) spec.donors[i] = { ...donor, name: list[i].name || `donor ${i + 1}`, carriesMarkers: p.spec.markers.map((m) => m.pos) };
+  }
+  spec.donors = spec.donors.slice(0, parts.length);
+  spec.markers = [...merged.values()].sort((a, b) => a.pos - b.pos).map(({ carriedBy, ...m }) => (carriedBy === parts.length ? { ...m, role: "intended", label: "intended change" } : { ...m, role: "blocking", label: "blocking change" }));
+  spec.design.editKind = "snp";
+  spec.design.label = `${parts.length} donors with ${spec.markers.length} substitution${spec.markers.length === 1 ? "" : "s"} (${spec.markers.filter((m) => m.role === "intended").length} carried by every donor)`;
+  if (!spec.markers.some((m) => m.role === "intended")) { spec.markers = spec.markers.map((m) => ({ ...m, role: "unclassified", label: "" })); warnings.push("No change is carried by every donor, so none is marked as the intended edit."); }
+  return { spec, warnings };
+}
+
+function specFromControlOne({ control, guides, donor = "", gene = "sample", minArm = 15, nuclease = "SpCas9", cutIndices = [] }) {
   const reference = fillReference(control);
   const warnings = [];
   const guideList = (Array.isArray(guides) ? guides : String(guides || "").split(/[,\s;]+/)).filter(Boolean);

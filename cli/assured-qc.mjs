@@ -6,9 +6,9 @@
 //        [--type clone|pool] [--goal homozygous|any] [--threads N] [--out results/]
 //        [--genbank gene.gb [--transcript NM_000000] [--regions "TIR domain:172-314,Death domain:67-122"] [--epitope 200-250]]   (functional knockout assessment)
 //   node cli/assured-qc.mjs figure --control control.ab1 --edited edited.ab1 [--design design.json | --guides G1,G2] [--out figure.svg]
-//   node cli/assured-qc.mjs recommend results.json [--observations protein.csv] [--panel 3] [--out recommendation.csv]   (rank the clones, choose the panel to confirm)
+//   node cli/assured-qc.mjs recommend results.json [--observations protein.csv] [--panel N] [--out recommendation.csv]   (rank the clones, choose the panel to confirm)
 //   node cli/assured-qc.mjs calibrate results.json observations.csv [--out calibration.md]   (how often the functional call was borne out)
-//   run also takes --observations protein.csv (sample, protein[, rna]) and --panel N
+//   run also takes --observations protein.csv (sample, protein[, rna]), --panel N (clones to carry forward first: 3 for a knockout, 6 for an edit) and --clone-figures (one annotated chromatogram per clone, aligned with the control)
 //
 // Nothing is uploaded anywhere: the files are read from disk and analysed in this process and its worker threads.
 import { readdirSync, readFileSync, writeFileSync, mkdirSync, statSync, existsSync } from "node:fs";
@@ -18,7 +18,7 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseAbif } from "../src/abif.js";
-import { planDesign, WORKFLOWS } from "../src/batch.js";
+import { planDesign, WORKFLOWS, headline } from "../src/batch.js";
 import { parseCodingFields } from "../src/coding.js";
 import { calibrate, parseObservations, calibrationMarkdown } from "../src/calibration.js";
 import { withRecommendations, applyObservations, recommendationCsv, panelOf } from "../src/recommend.js";
@@ -26,12 +26,18 @@ import { runProteinFigure } from "../src/proteinFigure.js";
 import { runSummaryFigure } from "../src/summaryFigure.js";
 import { autoPair, parseSampleSheet, resolveSheet } from "../src/sheet.js";
 import { parseDesignReport } from "../src/designReport.js";
+import { reportDonors } from "../src/quick.js";
+import { cloneSelectionFigure } from "../src/selectionFigure.js";
 import { buildQcReportHtml, buildResultsCsv, QC_VERSION } from "../src/report.js";
 import { buildPlateReportHtml, resequenceListCsv } from "../src/plateReport.js";
 import { tally, wellOf } from "../src/decision.js";
 import { chromatogramFigure } from "../src/figure.js";
+import { alignedGroups, cloneAlignedFigure, clonesAlignedFigure, clonesAlignmentFigure } from "../src/alignedFigure.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
+
+// --donor takes one sequence, or several separated by commas (used together, as the ssODNs of one design)
+const donorArg = (value) => { const parts = String(value || "").split(/[,;\s]+/).filter(Boolean); return parts.length > 1 ? parts : (parts[0] || ""); };
 
 function parseArgs(argv) {
   const args = { _: [] };
@@ -54,7 +60,7 @@ export async function main(argv) {
     console.log(`${result.n} clones scored; predicted knockouts ${result.knockoutCall.called}, protein absent in ${result.knockoutCall.confirmed}. ${result.note} Written to ${target}.`); return 0;
   }
   if (command === "recommend") {
-    // assured-qc recommend results.json [--observations protein.csv] [--panel 3] [--out recommendation.csv]: rank the clones and name the panel to take to the bench
+    // assured-qc recommend results.json [--observations protein.csv] [--panel N] [--out recommendation.csv]: rank the clones and name the panel to take to the bench
     const resultsPath = args._[1]; if (!resultsPath || !existsSync(resultsPath)) { console.error("recommend needs results.json (from a run)."); return 1; }
     let results = JSON.parse(readFileSync(resultsPath, "utf8")); const notes = [];
     if (args.observations) {
@@ -62,7 +68,7 @@ export async function main(argv) {
       const parsed = parseObservations(readFileSync(args.observations, "utf8")); if (parsed.errors.length) { parsed.errors.forEach((e) => console.error(e)); return 1; }
       const applied = applyObservations(results, parsed.rows); results = applied.results; notes.push(...applied.problems); console.log(`Protein results applied to ${applied.matched} sample(s).`);
     }
-    results = withRecommendations(results, { panel: Number(args.panel) || 3 });
+    results = withRecommendations(results, { panel: Number(args.panel) || undefined });
     const target = args.out || "recommendation.csv"; writeFileSync(target, recommendationCsv(results)); writeFileSync(target.replace(/\.csv$/i, "") + ".json", JSON.stringify(results.map((r) => ({ name: r.name, decision: r.decision, confirmation: r.confirmation || null, recommendation: r.recommendation })), null, 1));
     console.log(`Take forward first: ${panelOf(results).join(", ") || "none"}. Written to ${target}.`); notes.forEach((n) => console.log(`  note: ${n}`)); return 0;
   }
@@ -71,7 +77,7 @@ export async function main(argv) {
     const control = readTrace(args.control); const edited = readTrace(args.edited);
     const guides = args.guides ? String(args.guides).split(/[,;\s]+/).filter(Boolean) : [];
     const designSpec = args.design && /^\s*[{[]/.test(readFileSync(args.design, "utf8")) ? JSON.parse(readFileSync(args.design, "utf8")) : null;
-    const plan = planDesign({ designSpec, control, guides, donor: args.donor || "", gene: "sample", nuclease: args.nuclease || "SpCas9", editedForCut: [edited] });
+    const plan = planDesign({ designSpec, control, guides, donor: donorArg(args.donor), gene: "sample", nuclease: args.nuclease || "SpCas9", editedForCut: [edited] });
     if (plan.error) { console.error(plan.error); return 1; }
     const { svg, result } = chromatogramFigure({ name: args.name || path.basename(args.edited).replace(/\.ab1$/i, ""), controlTrace: control, editedTrace: edited, spec: plan.spec, sampleType: args.type || "clone", workflow: args.workflow || (plan.spec.donors?.length ? "snp" : plan.spec.guides.length > 1 ? "deletion" : "knockout") });
     const target = args.out || "figure.svg"; writeFileSync(target, svg); console.log(`${target}${result && result.decision ? `: ${result.decision.decision}` : ""}`); return 0;
@@ -94,11 +100,11 @@ export async function main(argv) {
   }
   if (!jobs.length) { console.error(`No samples to analyse.\n${problems.join("\n")}`); return 1; }
   // 2. design: file, guides on the command line, or (per sheet row) guides in the sheet; else inferred from the traces
-  let designSpec = null; let design = { guides: args.guides ? String(args.guides).split(/[,;\s]+/).filter(Boolean) : [], donor: args.donor || "" };
+  let designSpec = null; let design = { guides: args.guides ? String(args.guides).split(/[,;\s]+/).filter(Boolean) : [], donor: donorArg(args.donor) };
   if (args.design) {
     const text = readFileSync(args.design, "utf8");
     if (/^\s*[{[]/.test(text)) designSpec = JSON.parse(text);
-    else { const designs = parseDesignReport(text); const chosen = designs[Number(args["design-index"] || 0)]; design = { guides: chosen.guides.map((g) => g.sequence), donor: (chosen.donors.find((d) => d.recommended) || chosen.donors[0] || {}).sequence || "" }; console.log(`Design report: ${chosen.title}; ${chosen.guides.length} guide(s), ${chosen.donors.length} donor(s).`); }
+    else { const designs = parseDesignReport(text); const chosen = designs[Number(args["design-index"] || 0)]; design = { guides: chosen.guides.map((g) => g.sequence), donor: reportDonors(chosen.donors) }; console.log(`Design report: ${chosen.title}; ${chosen.guides.length} guide(s), ${chosen.donors.length} donor(s)${Array.isArray(design.donor) ? `; the ${design.donor.length} recommended donors are used together` : ""}.`); }
   }
   // 3. one spec per distinct control + guides + donor (the trace is only read once per group)
   // the gene record, if given: each allele is translated and the knockout is judged on the protein (NMD, truncation, splice sites, in-frame changes)
@@ -145,17 +151,21 @@ export async function main(argv) {
     const parsed = parseObservations(readFileSync(args.observations, "utf8")); if (parsed.errors.length) { parsed.errors.forEach((e) => console.error(e)); return 1; }
     const applied = applyObservations(results, parsed.rows); applied.results.forEach((r, i) => { results[i] = r; }); applied.problems.forEach((p) => problems.push(`Protein results: ${p}`));
   }
-  withRecommendations(results, { panel: Number(args.panel) || 3 }).forEach((r, i) => { results[i] = r; });
+  withRecommendations(results, { panel: Number(args.panel) || undefined }).forEach((r, i) => { results[i] = r; });
   // 5. outputs
   const workflowKey = results[0].workflow; const csv = buildResultsCsv(workflowKey, results);
   writeFileSync(path.join(out, "results.csv"), csv);
-  const slim = results.map(({ charts, ...rest }) => rest); writeFileSync(path.join(out, "results.json"), JSON.stringify(slim, null, 1));
+  const slim = results.map(({ charts, view, ...rest }) => rest); writeFileSync(path.join(out, "results.json"), JSON.stringify(slim, null, 1));
   writeFileSync(path.join(out, "report.html"), buildQcReportHtml({ title: `Sanger QC report: ${path.basename(path.resolve(folder))}`, workflow: workflowKey, design: design.guides.join(", "), results, notes: problems }));
   writeFileSync(path.join(out, "plate.html"), buildPlateReportHtml({ title: path.basename(path.resolve(folder)), results }));
   writeFileSync(path.join(out, "resequence.csv"), resequenceListCsv(results));
   writeFileSync(path.join(out, "recommendation.csv"), recommendationCsv(results));
   const summarySvg = runSummaryFigure(results, { title: `Run summary: ${path.basename(path.resolve(folder))}` }); if (summarySvg) writeFileSync(path.join(out, "summary.svg"), summarySvg);
   const productsSvg = runProteinFigure(results); if (productsSvg) writeFileSync(path.join(out, "protein_products.svg"), productsSvg);
+  const selectionSvg = cloneSelectionFigure(results); if (selectionSvg) writeFileSync(path.join(out, "clone_selection.svg"), selectionSvg);
+  // all clones laid onto the control: the base calls as an alignment, and the chromatograms stacked (up to 48 clones); per-clone figures with --clone-figures
+  alignedGroups(results).forEach((items, g) => { const tag = g ? `_${g + 1}` : ""; writeFileSync(path.join(out, `clones_alignment${tag}.svg`), clonesAlignmentFigure(items)); if (items.length <= 48) writeFileSync(path.join(out, `clones_aligned${tag}.svg`), clonesAlignedFigure(items)); });
+  if (args["clone-figures"]) { const dir = path.join(out, "chromatograms"); mkdirSync(dir, { recursive: true }); results.forEach((r) => { if (r.ok && r.view) writeFileSync(path.join(dir, `${String(r.name).replace(/[^\w.-]+/g, "_")}.svg`), cloneAlignedFigure(r.view, { name: r.name, decision: r.decision ? r.decision.decision : "", headline: headline(workflowKey, r) })); }); }
   writeFileSync(path.join(out, "run.json"), JSON.stringify({ tool: "Assured QC", version: QC_VERSION, finished: new Date().toISOString(), seconds, threads, samples: results.length, samplesPerHour: Math.round((results.length / seconds) * 3600), arguments: { ...args, _: undefined }, geneRecord: genbank ? { file: path.basename(args.genbank), sha256: createHash("sha256").update(genbank).digest("hex"), options: codingOptions } : (designSpec && designSpec.coding && tasks.some((t) => t.options.codingInput) ? { file: "coding block of the design file", sha256: createHash("sha256").update(JSON.stringify(designSpec.coding)).digest("hex"), options: codingOptions } : null), workflow: workflowKey, nuclease, pairingProblems: problems, decisions: tally(results.map((r) => r.decision)) }, null, 1));
   const t = tally(results.map((r) => r.decision)); console.log(`${results.length} samples in ${seconds.toFixed(1)} s on ${threads} thread(s) (${Math.round((results.length / seconds) * 3600)} per hour): accept ${t.accept}, hold ${t.hold}, re-sequence ${t["re-sequence"]}, reject ${t.reject}. Results in ${out}`);
   const panel = panelOf(results); if (panel.length) console.log(`Take forward first: ${panel.join(", ")} (ranked in recommendation.csv).`);
