@@ -1,3 +1,4 @@
+import IceComparison from "./IceComparison.jsx";
 import { useMemo, useRef, useState } from "react";
 import { classifyFiles, buildPairs, readDesign, planTasks, runPool } from "./quick.js";
 import { parseCodingFields } from "./coding.js";
@@ -105,7 +106,7 @@ export default function QuickStart() {
         <input ref={folderPicker} hidden style={{ display: "none" }} type="file" multiple webkitdirectory="" directory="" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} aria-label="Choose a folder" />
         <p><button type="button" disabled={running} onClick={() => folderPicker.current.click()}>Add a folder</button> <span className="muted">Imports supported files inside a folder. To select one HTML report, use Add files or Choose design report.</span></p>
         <p>Select files from one folder, then click Add files again for another folder. Earlier traces and your design stay loaded. You can also add folders one at a time.</p>
-        <p className="muted">Nothing is uploaded: the files are read and analysed in this browser.</p>
+        <p className="muted">Assured QC reads files in this browser. Files are sent to the server only if you explicitly run the optional ICE comparison.</p>
       </div>
       {traceNames.length > 0 && <details open>
         <summary>Loaded traces ({traceNames.length})</summary>
@@ -169,6 +170,7 @@ export default function QuickStart() {
       {error && <p className="error">{error}</p>}
       {outcome && (
         <>
+          <IceComparison onBusy={setRunning} key={outcome.tasks} outcome={outcome} files={files.current} nuclease={nuclease} onComplete={results => setOutcome(previous => ({...previous, results}))} />
           <h2>Decisions</h2>
           <p className="chips">{DECISION_ORDER.map((k) => <span key={k} className={`chip d-${k.replace("-", "")}`}>{LABEL[k]} {counts[k]}</span>)}</p>
           {summaryFigure && <div className="scroll" dangerouslySetInnerHTML={{ __html: summaryFigure }} />}

@@ -1,0 +1,25 @@
+{
+  "repository": "https://github.com/synthego-open/ice",
+  "commit": "310495fe536b7d2eafcee80f145c55f7c65d947c",
+  "version": "1.2.0",
+  "files": {
+    "__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "__version__.py": "102e09d5609135bbabd7da94fbfaef691e855cd0f0670a5fcaa0a272124a9954",
+    "classes\\edit_proposal.py": "25d187e8697a8b321deb4367737d150c7ff0cd9296fd9a84f1d092e122fad43d",
+    "classes\\edit_proposal_creator.py": "721234522827fd1f78fb1c6ad732fa8ecc5c2eb3c3b83662ce68ff5b04d18282",
+    "classes\\guide_target.py": "32be8738c112b527d63e92b6fc8d0668ad3a33e0c20337009d256b0b59571a50",
+    "classes\\ice_result.py": "89872373f504f0818ab4a801904bbaf94e8d86231349539891ed2d7fd2cd9ba9",
+    "classes\\pair_alignment.py": "5b9bb3fc4408f95fd105461bbb836dbf7b63b8662a5d352940df8f347da48339",
+    "classes\\proposal_base.py": "39c741e8272b7902e353e7b1ae7e9b1f073eb83709a145ced72e3e5512e3ed21",
+    "classes\\sanger_analysis.py": "0af6e7bc6d91c996772d07b538431f5a39e838186dedaa96409acfd10bd2e37e",
+    "classes\\sanger_object.py": "608c4415ecefeac41b40e5977c75c9c4685a80c1c6c80e7da99000fe04a9719b",
+    "classes\\__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "outputs\\create_discordance_indel_files.py": "4e034eaa59c06639d32b3395455f1789ba7bebeb129bbb4a420b2415945eac08",
+    "outputs\\create_json.py": "9373f88bdf6faecd838882fed5c3bad19405e9dcaafe1f678102504842efb7a4",
+    "outputs\\create_trace_files.py": "69658d69546f4265f591f2ef556418a5f4f0a505483c4be3c6ef20c9f755bad0",
+    "outputs\\__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "utility\\misc.py": "301af351d9731c5888ed6a879bd0d40d079491b160b18ad60ad5838e821ec1a3",
+    "utility\\sequence.py": "04ca84f407fd1213ffb36bd6730846e5cf57127db133b4bf1b8100809e4b0075",
+    "utility\\__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

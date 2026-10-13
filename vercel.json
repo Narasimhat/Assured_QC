@@ -14,5 +14,11 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/ice.py": {
+      "maxDuration": 60,
+      "excludeFiles": "{.venv/**,node_modules/**,fixtures/**,bench/**,test/**}"
+    }
+  }
 }

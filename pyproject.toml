@@ -1,0 +1,4 @@
+[project]
+name = "assured-qc-ice"
+version = "0.6.0"
+requires-python = ">=3.12,<3.13"

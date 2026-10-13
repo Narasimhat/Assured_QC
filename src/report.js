@@ -1,3 +1,4 @@
+import { iceComparisonHtml } from "./iceComparison.js";
 // Self-contained HTML report and CSV for a batch of analysed samples.
 import { WORKFLOWS, headline } from "./batch.js";
 import { cloneProteinFigure } from "./proteinFigure.js";
@@ -6,7 +7,7 @@ import { cloneAlignedFigure, alignedGroups, clonesAlignedFigure, clonesAlignment
 import { cloneSelectionFigure } from "./selectionFigure.js";
 import { panelOf } from "./recommend.js";
 
-export const QC_VERSION = "0.5.1";
+export const QC_VERSION = "0.6.0";
 const esc = (value) => String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const pct = (value) => (value === null || value === undefined ? "n/a" : `${(value * 100).toFixed(1)}%`);
 
@@ -106,6 +107,7 @@ export function buildQcReportHtml({ title = "Sanger QC report", workflow, design
 <div class="note"><b>Review required.</b> These are computed estimates from Sanger traces. Check the traces and the points flagged below before accepting a clone or releasing a line.</div>
 ${notes.map((n) => `<p>${esc(n)}</p>`).join("")}
 <h2>Summary</h2>${(() => { const fig = runSummaryFigure(results, { title: "Run summary" }); return fig ? `<div style="overflow-x:auto">${fig}</div>` : ""; })()}<table><tr><th>Sample</th><th>Decision</th><th>Result</th><th>Notes</th></tr>${rows}</table>
+${iceComparisonHtml(results)}
 ${selectionSection(results, workflow)}
 ${alignedSection(results)}
 <h2>Samples</h2>${results.map((r) => sampleSection(workflow, r, { chromatogram: results.length <= 48 || !r.decision || r.decision.decision !== "reject" })).join("")}

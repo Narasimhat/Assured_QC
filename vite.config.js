@@ -8,5 +8,5 @@ export default defineConfig(({ command }) => ({
   plugins: [react()],
   base: command === "build" && process.env.GITHUB_PAGES === "1" ? GITHUB_PAGES_BASE : "/",
   worker: { format: "es" },
-  server: { host: true, port: 5174 },
+  server: { host: true, port: 5174, proxy: { "/api/ice": "http://127.0.0.1:8786" } },
 }));
