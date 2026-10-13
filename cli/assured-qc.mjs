@@ -8,7 +8,7 @@
 //   node cli/assured-qc.mjs figure --control control.ab1 --edited edited.ab1 [--design design.json | --guides G1,G2] [--out figure.svg|figure.pdf]
 //   node cli/assured-qc.mjs recommend results.json [--observations protein.csv] [--panel N] [--out recommendation.csv]   (rank the clones, choose the panel to confirm)
 //   node cli/assured-qc.mjs calibrate results.json observations.csv [--out calibration.md]   (how often the functional call was borne out)
-//   run also takes --observations protein.csv (sample, protein[, rna]), --panel N (clones to carry forward first: 3 for a knockout, 6 for an edit) --clone-figures (one annotated chromatogram per clone, aligned with the control) and --no-pdf (every figure is also written as a vector PDF next to its SVG; put this option last)
+//   run also takes --observations protein.csv (sample, protein[, rna]), --panel N (clones to carry forward first: 3 for a knockout, 6 for an edit) --clone-figures (one annotated chromatogram per clone, aligned with the control) and --ice FOLDER (also run Synthego ICE, a checkout of github.com/synthego-open/ice, and compare: ice_comparison.csv, ice_vs_assuredqc.svg, ice_raw.json and a section in the report; --ice-python PYTHON, --ice-jobs N; --ice-raw ice_raw.json reuses earlier results for the same traces; --ice-plan writes the ICE jobs to ice_jobs.json for scripts/run_ice_plan.py; --ice-results ICE_export.zip compares with results downloaded from the ICE web tool (the zip, its summary .csv or the unzipped folder) without running ICE; ICE changes no call or rank) and --no-pdf (every figure is also written as a vector PDF next to its SVG; put this option last)
 //
 // Nothing is uploaded anywhere: the files are read from disk and analysed in this process and its worker threads.
 import { readdirSync, readFileSync, writeFileSync, mkdirSync, statSync, existsSync } from "node:fs";
@@ -29,6 +29,9 @@ import { parseDesignReport } from "../src/designReport.js";
 import { reportDonors } from "../src/quick.js";
 import { cloneSelectionFigure } from "../src/selectionFigure.js";
 import { svgToPdf } from "../src/svgPdf.js";
+import { iceJobsFor, compareRun, iceCsv, iceSectionHtml, iceScatterSvg, iceSummary, iceRawRecords, matchIceRaw, parseIceJson, ICE_FIT_OK, ICE_DIFFERENCE } from "../src/iceCompare.js";
+import { checkIce, icePython, runIceJobs } from "./ice-runner.mjs";
+import { readIceExport, compareWithExport } from "../src/iceImport.js";
 import { buildQcReportHtml, buildResultsCsv, QC_VERSION } from "../src/report.js";
 import { buildPlateReportHtml, resequenceListCsv } from "../src/plateReport.js";
 import { tally, wellOf } from "../src/decision.js";
@@ -86,6 +89,23 @@ export async function main(argv) {
   if (command !== "run") { console.error(`Unknown command ${command}. Use: run <folder> | figure --control FILE --edited FILE | calibrate results.json observations.csv | recommend results.json`); return 1; }
   const folder = args._[1]; if (!folder || !existsSync(folder)) { console.error("Give the folder with the .ab1 files."); return 1; }
   const out = args.out || path.join(folder, "assured-qc-results"); mkdirSync(out, { recursive: true });
+  // optional comparison with Synthego ICE (a source checkout given with --ice); checked now so that a wrong folder or Python is reported before the analysis
+  // --ice-raw: reuse the ice_raw.json of an earlier run (same samples, guides, donors and traces) instead of running ICE again
+  const iceRawPath = args["ice-raw"]; if (iceRawPath && (iceRawPath === true || !existsSync(iceRawPath))) { console.error(`ICE results not found: ${iceRawPath}`); return 1; }
+  // --ice-results: results downloaded from the ICE web tool (its zip, the summary .csv, or the unzipped folder); read now so that a wrong file is reported before the analysis
+  const iceResultsPath = args["ice-results"]; let iceExport = null; let iceExportFiles = [];
+  if (iceResultsPath) {
+    if (iceResultsPath === true || !existsSync(iceResultsPath)) { console.error(`ICE results not found: ${iceResultsPath}`); return 1; }
+    if (args.ice || args["ice-raw"] || args["ice-plan"]) { console.error("--ice-results (results downloaded from the ICE web tool) cannot be combined with --ice, --ice-raw or --ice-plan."); return 1; }
+    const given = statSync(iceResultsPath).isDirectory() ? readdirSync(iceResultsPath).filter((n) => /^summary.*\.csv$/i.test(n) || (/\.zip$/i.test(n) && !readdirSync(iceResultsPath).some((m) => /^summary.*\.csv$/i.test(m)))).map((n) => path.join(iceResultsPath, n)) : [iceResultsPath];
+    if (!given.length) { console.error(`ICE results: no summary .csv or .zip in ${iceResultsPath}`); return 1; }
+    iceExportFiles = given.map((p) => ({ name: path.basename(p), bytes: new Uint8Array(readFileSync(p)) }));
+    iceExport = await readIceExport(iceExportFiles);
+    if (!iceExport.rows.length) { console.error(`ICE results: ${iceExport.problems.join(" ") || "no samples found"}`); return 1; }
+    iceExport.problems.forEach((p) => console.error(`ICE results: ${p}`));
+  }
+  const python = icePython(args); const iceCheck = args.ice && !iceRawPath ? checkIce(args.ice, python) : null;
+  if (iceCheck && !iceCheck.ok) { console.error(iceCheck.error); return 1; }
   const files = walk(folder).filter((p) => /\.(ab1|abi)$/i.test(p) && !p.startsWith(path.resolve(out)));
   const byName = new Map(files.map((p) => [path.basename(p), p]));
   // 1. pairing: a sample sheet if given, otherwise by names
@@ -153,16 +173,50 @@ export async function main(argv) {
     const applied = applyObservations(results, parsed.rows); applied.results.forEach((r, i) => { results[i] = r; }); applied.problems.forEach((p) => problems.push(`Protein results: ${p}`));
   }
   withRecommendations(results, { panel: Number(args.panel) || undefined }).forEach((r, i) => { results[i] = r; });
+  // 4b. comparison with ICE: run on the same traces (one process per share of the jobs) or taken from an earlier run; it changes no call, rank or score above
+  let iceRows = null; let iceMeta = null; const icePlan = Boolean(args["ice-plan"]) && !iceCheck && !iceRawPath;
+  if (iceCheck || iceRawPath || icePlan) {
+    const { jobs: iceJobs, skipped } = iceJobsFor(tasks, { nuclease }); const iceStarted = Date.now(); const sha = (p) => createHash("sha256").update(readFileSync(p)).digest("hex");
+    let ran; let iceVersion = iceCheck ? iceCheck.version : ""; let icePythonVersion = iceCheck ? iceCheck.python : "";
+    if (icePlan) {
+      // the jobs only: ICE is run elsewhere (scripts/run_ice_plan.py) and its ice_raw.json is given back with --ice-raw
+      writeFileSync(path.join(out, "ice_jobs.json"), JSON.stringify({ tool: "Synthego ICE", jobs: iceJobs.map(({ index, workflow, ...job }) => ({ ...job, control: path.resolve(job.control), edited: path.resolve(job.edited) })), notRun: skipped }, null, 1));
+      console.log(`ICE jobs (${iceJobs.length}) written to ice_jobs.json. Run: python scripts/run_ice_plan.py <ICE folder> ${path.join(out, "ice_jobs.json")} ${path.join(out, "ice_raw.json")}  then add --ice-raw ${path.join(out, "ice_raw.json")}`);
+    } else if (iceRawPath) {
+      const raw = parseIceJson(readFileSync(iceRawPath, "utf8")); const matched = matchIceRaw(iceJobs, raw.records, sha);
+      if (matched.problems.length) { matched.problems.forEach((p) => console.error(`ICE results: ${p}`)); return 1; }
+      ran = matched.results; iceVersion = raw.version || ""; icePythonVersion = raw.python || "";
+      console.log(`ICE ${iceVersion}: results of ${iceJobs.length} run(s) reused from ${path.basename(iceRawPath)}.`);
+    } else {
+      console.log(`ICE ${iceVersion}: ${iceJobs.length} run(s) for ${new Set(iceJobs.map((j) => j.index)).size} of ${tasks.length} sample(s)${skipped.length ? `; ${skipped.length} not run (${[...new Set(skipped.map((s) => s.reason))].join("; ")})` : ""}.`);
+      ran = await runIceJobs({ iceDir: args.ice, python, jobs: iceJobs, workdir: path.join(out, "ice_work"), concurrency: Number(args["ice-jobs"]) || threads, onProgress: (d, n) => process.stderr.write(`\rICE ${d}/${n}`) });
+      process.stderr.write("\n");
+    }
+    if (!icePlan) {
+    const byIndex = new Map(); iceJobs.forEach((j, k) => { if (!byIndex.has(j.index)) byIndex.set(j.index, []); byIndex.get(j.index).push({ donorName: j.donorName, ...ran.get(k) }); });
+    iceRows = compareRun(results, byIndex, skipped);
+    writeFileSync(path.join(out, "ice_raw.json"), JSON.stringify({ tool: "Synthego ICE", version: iceVersion, python: icePythonVersion, records: iceRawRecords(iceJobs, ran, sha) }, null, 1));
+    iceMeta = { tool: "Synthego ICE", version: iceVersion, source: iceRawPath ? `results reused from ${path.basename(iceRawPath)}` : path.resolve(args.ice), python: icePythonVersion, pythonExecutable: iceRawPath ? "" : python, seconds: Math.round((Date.now() - iceStarted) / 100) / 10, runs: iceJobs.length, nuclease: "SpCas9", fitThreshold: ICE_FIT_OK, differenceThreshold: ICE_DIFFERENCE, donors: "one per ICE run; the best donor is shown", summary: iceSummary(iceRows), rawResults: "ice_raw.json (inputs by SHA-256, as returned by ICE)", note: "ICE is a comparator: it changes no call, rank or score. Used under its research and non-profit licence; not redistributed." };
+    }
+  }
+  if (iceExport) {
+    // results from the ICE web tool: matched to the samples by name; nothing is run
+    const cmp = compareWithExport({ tasks, results, rows: iceExport.rows }); iceRows = cmp.rows; cmp.problems.forEach((p) => console.error(`ICE results: ${p}`));
+    const shaOf = (bytes) => createHash("sha256").update(bytes).digest("hex");
+    iceMeta = { tool: "ICE web tool (exported results)", imported: true, source: iceExport.sources.join(", "), files: iceExportFiles.map((f) => ({ file: f.name, sha256: shaOf(f.bytes) })), labelsRead: iceExport.rows.length, labelsNotMatched: cmp.unmatched.map((r) => r.label), fitThreshold: ICE_FIT_OK, differenceThreshold: ICE_DIFFERENCE, donors: "one ICE run per donor for a point edit or tag; the best donor is shown", summary: iceSummary(iceRows), note: "ICE was run by the user in the web tool, not by Assured QC. ICE is a comparator: it changes no call, rank or score." };
+    writeFileSync(path.join(out, "ice_results_used.json"), JSON.stringify({ tool: iceMeta.tool, files: iceMeta.files, rows: iceExport.rows }, null, 1));
+  }
   // 5. outputs
   const workflowKey = results[0].workflow; const csv = buildResultsCsv(workflowKey, results);
   writeFileSync(path.join(out, "results.csv"), csv);
   const slim = results.map(({ charts, view, ...rest }) => rest); writeFileSync(path.join(out, "results.json"), JSON.stringify(slim, null, 1));
-  writeFileSync(path.join(out, "report.html"), buildQcReportHtml({ title: `Sanger QC report: ${path.basename(path.resolve(folder))}`, workflow: workflowKey, design: design.guides.join(", "), results, notes: problems }));
+  writeFileSync(path.join(out, "report.html"), buildQcReportHtml({ title: `Sanger QC report: ${path.basename(path.resolve(folder))}`, workflow: workflowKey, design: design.guides.join(", "), results, notes: problems, extraHtml: iceRows ? iceSectionHtml(iceRows, iceMeta) : "" }));
   writeFileSync(path.join(out, "plate.html"), buildPlateReportHtml({ title: path.basename(path.resolve(folder)), results }));
   writeFileSync(path.join(out, "resequence.csv"), resequenceListCsv(results));
   writeFileSync(path.join(out, "recommendation.csv"), recommendationCsv(results));
   // every figure is written as SVG and, unless --no-pdf, as a vector PDF next to it (the PDFs are made after the SVGs, below)
   const pdfJobs = []; const writeFigure = (file, svg) => { writeFileSync(file, svg); if (!args["no-pdf"]) pdfJobs.push([file.replace(/\.svg$/i, ".pdf"), svg]); };
+  if (iceRows) { writeFileSync(path.join(out, "ice_comparison.csv"), iceCsv(iceRows)); const iceSvg = iceScatterSvg(iceRows); if (iceSvg) writeFigure(path.join(out, "ice_vs_assuredqc.svg"), iceSvg); }
   const summarySvg = runSummaryFigure(results, { title: `Run summary: ${path.basename(path.resolve(folder))}` }); if (summarySvg) writeFigure(path.join(out, "summary.svg"), summarySvg);
   const productsSvg = runProteinFigure(results); if (productsSvg) writeFigure(path.join(out, "protein_products.svg"), productsSvg);
   const selectionSvg = cloneSelectionFigure(results); if (selectionSvg) writeFigure(path.join(out, "clone_selection.svg"), selectionSvg);
@@ -170,8 +224,9 @@ export async function main(argv) {
   alignedGroups(results).forEach((items, g) => { const tag = g ? `_${g + 1}` : ""; writeFigure(path.join(out, `clones_alignment${tag}.svg`), clonesAlignmentFigure(items)); if (items.length <= 48) writeFigure(path.join(out, `clones_aligned${tag}.svg`), clonesAlignedFigure(items)); });
   if (args["clone-figures"]) { const dir = path.join(out, "chromatograms"); mkdirSync(dir, { recursive: true }); results.forEach((r) => { if (r.ok && r.view) writeFigure(path.join(dir, `${String(r.name).replace(/[^\w.-]+/g, "_")}.svg`), cloneAlignedFigure(r.view, { name: r.name, decision: r.decision ? r.decision.decision : "", headline: headline(workflowKey, r) })); }); }
   for (const [file, svg] of pdfJobs) writeFileSync(file, await svgToPdf(svg));
-  writeFileSync(path.join(out, "run.json"), JSON.stringify({ tool: "Assured QC", version: QC_VERSION, finished: new Date().toISOString(), seconds, threads, samples: results.length, samplesPerHour: Math.round((results.length / seconds) * 3600), arguments: { ...args, _: undefined }, geneRecord: genbank ? { file: path.basename(args.genbank), sha256: createHash("sha256").update(genbank).digest("hex"), options: codingOptions } : (designSpec && designSpec.coding && tasks.some((t) => t.options.codingInput) ? { file: "coding block of the design file", sha256: createHash("sha256").update(JSON.stringify(designSpec.coding)).digest("hex"), options: codingOptions } : null), workflow: workflowKey, nuclease, pairingProblems: problems, decisions: tally(results.map((r) => r.decision)) }, null, 1));
+  writeFileSync(path.join(out, "run.json"), JSON.stringify({ tool: "Assured QC", version: QC_VERSION, finished: new Date().toISOString(), seconds, threads, samples: results.length, samplesPerHour: Math.round((results.length / seconds) * 3600), arguments: { ...args, _: undefined }, geneRecord: genbank ? { file: path.basename(args.genbank), sha256: createHash("sha256").update(genbank).digest("hex"), options: codingOptions } : (designSpec && designSpec.coding && tasks.some((t) => t.options.codingInput) ? { file: "coding block of the design file", sha256: createHash("sha256").update(JSON.stringify(designSpec.coding)).digest("hex"), options: codingOptions } : null), ice: iceMeta || undefined, workflow: workflowKey, nuclease, pairingProblems: problems, decisions: tally(results.map((r) => r.decision)) }, null, 1));
   const t = tally(results.map((r) => r.decision)); console.log(`${results.length} samples in ${seconds.toFixed(1)} s on ${threads} thread(s) (${Math.round((results.length / seconds) * 3600)} per hour): accept ${t.accept}, hold ${t.hold}, re-sequence ${t["re-sequence"]}, reject ${t.reject}. Results in ${out}`);
+  if (iceRows) { const s = iceSummary(iceRows); console.log(`ICE comparison (ice_comparison.csv): ${s.agree} agree, ${s.ice_fit_poor} with a poor ICE fit (not comparable), ${s.differ} differ${s.ice_failed ? `, ${s.ice_failed} failed` : ""}${s.not_run ? `, ${s.not_run} not run` : ""}.`); iceRows.filter((r) => r.status === "differ" || r.status === "ice_fit_poor").forEach((r) => console.log(`  ${r.sample}: Assured QC ${r.app}, ICE ${r.ice}${r.iceR2 !== null ? ` (R\u00b2 ${r.iceR2.toFixed(2)})` : ""}: ${r.note}`)); }
   const panel = panelOf(results); if (panel.length) console.log(`Take forward first: ${panel.join(", ")} (ranked in recommendation.csv).`);
   problems.forEach((p) => console.log(`  note: ${p}`));
   return 0;

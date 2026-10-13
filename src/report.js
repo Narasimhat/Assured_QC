@@ -6,7 +6,7 @@ import { cloneAlignedFigure, alignedGroups, clonesAlignedFigure, clonesAlignment
 import { cloneSelectionFigure } from "./selectionFigure.js";
 import { panelOf } from "./recommend.js";
 
-export const QC_VERSION = "0.5.2";
+export const QC_VERSION = "0.5.3";
 const esc = (value) => String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const pct = (value) => (value === null || value === undefined ? "n/a" : `${(value * 100).toFixed(1)}%`);
 
@@ -97,7 +97,7 @@ export function alignedSection(results) {
   return `<h2>All clones aligned</h2>${intro}${groups.map((items, g) => `${groups.length > 1 ? `<h3>Design group ${g + 1} (${items.length} samples)</h3>` : ""}<h3>Base calls</h3><div style="overflow-x:auto">${clonesAlignmentFigure(items)}</div>${items.length <= 48 ? `<h3>Chromatograms</h3><div style="overflow-x:auto">${clonesAlignedFigure(items)}</div>` : "<p class=\"muted\">More than 48 clones: the chromatograms are in the sample sections below.</p>"}`).join("")}`;
 }
 
-export function buildQcReportHtml({ title = "Sanger QC report", workflow, design = "", results, generatedAt = new Date(), notes = [] }) {
+export function buildQcReportHtml({ title = "Sanger QC report", workflow, design = "", results, generatedAt = new Date(), notes = [], extraHtml = "" }) {
   const flow = WORKFLOWS[workflow]?.label || workflow;
   const rows = results.map((r) => `<tr><td>${esc(r.name)}</td><td>${r.decision ? esc(DECISION_LABEL[r.decision.decision]) : ""}</td><td class="${statusClass(r)}">${esc(headline(workflow, r))}</td><td>${r.ok ? (r.warnings?.length ? `${r.warnings.length} note${r.warnings.length === 1 ? "" : "s"}` : "none") : "not analysed"}</td></tr>`).join("");
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${STYLE}</style></head><body>
@@ -108,6 +108,7 @@ ${notes.map((n) => `<p>${esc(n)}</p>`).join("")}
 <h2>Summary</h2>${(() => { const fig = runSummaryFigure(results, { title: "Run summary" }); return fig ? `<div style="overflow-x:auto">${fig}</div>` : ""; })()}<table><tr><th>Sample</th><th>Decision</th><th>Result</th><th>Notes</th></tr>${rows}</table>
 ${selectionSection(results, workflow)}
 ${alignedSection(results)}
+${extraHtml}
 <h2>Samples</h2>${results.map((r) => sampleSection(workflow, r, { chromatogram: results.length <= 48 || !r.decision || r.decision.decision !== "reject" })).join("")}
 <h2>Method and limits</h2><ul>${METHOD.map((m) => `<li>${esc(m)}</li>`).join("")}</ul>
 </body></html>`;
