@@ -6,7 +6,7 @@ import { cloneAlignedFigure, alignedGroups, clonesAlignedFigure, clonesAlignment
 import { cloneSelectionFigure } from "./selectionFigure.js";
 import { panelOf } from "./recommend.js";
 
-export const QC_VERSION = "0.5.1";
+export const QC_VERSION = "0.5.2";
 const esc = (value) => String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const pct = (value) => (value === null || value === undefined ? "n/a" : `${(value * 100).toFixed(1)}%`);
 

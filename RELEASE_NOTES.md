@@ -1,5 +1,11 @@
 # Release notes
 
+## 0.5.2 (2026-10-13)
+
+- PDF export: every figure can be saved as a vector PDF (browser: a (PDF) button next to (SVG) and (PNG) for the clone selection, base-call alignment, aligned chromatograms, summary graph, protein products, the aligned chromatogram and the figure of the selected sample; command line: `run` writes a `.pdf` next to each `.svg`, `--no-pdf` turns that off, and `figure --out figure.pdf` works). The PDF is drawn from the SVG by a new dependency-free converter, `src/svgPdf.js`; text uses the standard Helvetica and Courier faces (not embedded). See `docs/pdf-export.md`.
+- No estimate, interval, call, decision or figure layout changes. The engine files are byte-identical to 0.5.1 apart from `saveFigure.js` (the PDF button helper) and the version string in `report.js`; `bench/ENGINE_FREEZE_0.5.2.json` records them.
+- Tests: `test/svg-pdf.test.js` (17 tests) converts every figure of the app and checks the page size, one text operator per drawn text, the cross-reference table, that nothing is skipped or lost, and the compressed content against the plain content.
+
 ## 0.5.1 (2026-10-13)
 
 - HDR score mode (SNP, small tag): the intended-edit share is named the HDR score (ICE's HDR or KI score) in the summary graph, plate view, clone selection figure (the score and its interval are written out), report tables and headline, aligned-chromatogram labels and the browser; `support_basis` reads "HDR score (intended edit), lower bound of the 95% interval". Clones are still ranked by the lower bound of the interval. Blocking changes without the edit stay separate and are not counted. No estimate, interval, call or decision changes.

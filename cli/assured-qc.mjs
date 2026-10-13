@@ -5,10 +5,10 @@
 //        [--workflow auto|knockout|deletion|snp|tag_small|base_edit] [--nuclease SpCas9] [--editor ABE|CBE --window 4-8 --target 6]
 //        [--type clone|pool] [--goal homozygous|any] [--threads N] [--out results/]
 //        [--genbank gene.gb [--transcript NM_000000] [--regions "TIR domain:172-314,Death domain:67-122"] [--epitope 200-250]]   (functional knockout assessment)
-//   node cli/assured-qc.mjs figure --control control.ab1 --edited edited.ab1 [--design design.json | --guides G1,G2] [--out figure.svg]
+//   node cli/assured-qc.mjs figure --control control.ab1 --edited edited.ab1 [--design design.json | --guides G1,G2] [--out figure.svg|figure.pdf]
 //   node cli/assured-qc.mjs recommend results.json [--observations protein.csv] [--panel N] [--out recommendation.csv]   (rank the clones, choose the panel to confirm)
 //   node cli/assured-qc.mjs calibrate results.json observations.csv [--out calibration.md]   (how often the functional call was borne out)
-//   run also takes --observations protein.csv (sample, protein[, rna]), --panel N (clones to carry forward first: 3 for a knockout, 6 for an edit) and --clone-figures (one annotated chromatogram per clone, aligned with the control)
+//   run also takes --observations protein.csv (sample, protein[, rna]), --panel N (clones to carry forward first: 3 for a knockout, 6 for an edit) --clone-figures (one annotated chromatogram per clone, aligned with the control) and --no-pdf (every figure is also written as a vector PDF next to its SVG; put this option last)
 //
 // Nothing is uploaded anywhere: the files are read from disk and analysed in this process and its worker threads.
 import { readdirSync, readFileSync, writeFileSync, mkdirSync, statSync, existsSync } from "node:fs";
@@ -28,6 +28,7 @@ import { autoPair, parseSampleSheet, resolveSheet } from "../src/sheet.js";
 import { parseDesignReport } from "../src/designReport.js";
 import { reportDonors } from "../src/quick.js";
 import { cloneSelectionFigure } from "../src/selectionFigure.js";
+import { svgToPdf } from "../src/svgPdf.js";
 import { buildQcReportHtml, buildResultsCsv, QC_VERSION } from "../src/report.js";
 import { buildPlateReportHtml, resequenceListCsv } from "../src/plateReport.js";
 import { tally, wellOf } from "../src/decision.js";
@@ -80,7 +81,7 @@ export async function main(argv) {
     const plan = planDesign({ designSpec, control, guides, donor: donorArg(args.donor), gene: "sample", nuclease: args.nuclease || "SpCas9", editedForCut: [edited] });
     if (plan.error) { console.error(plan.error); return 1; }
     const { svg, result } = chromatogramFigure({ name: args.name || path.basename(args.edited).replace(/\.ab1$/i, ""), controlTrace: control, editedTrace: edited, spec: plan.spec, sampleType: args.type || "clone", workflow: args.workflow || (plan.spec.donors?.length ? "snp" : plan.spec.guides.length > 1 ? "deletion" : "knockout") });
-    const target = args.out || "figure.svg"; writeFileSync(target, svg); console.log(`${target}${result && result.decision ? `: ${result.decision.decision}` : ""}`); return 0;
+    const target = args.out || "figure.svg"; writeFileSync(target, /\.pdf$/i.test(target) ? await svgToPdf(svg) : svg); console.log(`${target}${result && result.decision ? `: ${result.decision.decision}` : ""}`); return 0;
   }
   if (command !== "run") { console.error(`Unknown command ${command}. Use: run <folder> | figure --control FILE --edited FILE | calibrate results.json observations.csv | recommend results.json`); return 1; }
   const folder = args._[1]; if (!folder || !existsSync(folder)) { console.error("Give the folder with the .ab1 files."); return 1; }
@@ -160,12 +161,15 @@ export async function main(argv) {
   writeFileSync(path.join(out, "plate.html"), buildPlateReportHtml({ title: path.basename(path.resolve(folder)), results }));
   writeFileSync(path.join(out, "resequence.csv"), resequenceListCsv(results));
   writeFileSync(path.join(out, "recommendation.csv"), recommendationCsv(results));
-  const summarySvg = runSummaryFigure(results, { title: `Run summary: ${path.basename(path.resolve(folder))}` }); if (summarySvg) writeFileSync(path.join(out, "summary.svg"), summarySvg);
-  const productsSvg = runProteinFigure(results); if (productsSvg) writeFileSync(path.join(out, "protein_products.svg"), productsSvg);
-  const selectionSvg = cloneSelectionFigure(results); if (selectionSvg) writeFileSync(path.join(out, "clone_selection.svg"), selectionSvg);
+  // every figure is written as SVG and, unless --no-pdf, as a vector PDF next to it (the PDFs are made after the SVGs, below)
+  const pdfJobs = []; const writeFigure = (file, svg) => { writeFileSync(file, svg); if (!args["no-pdf"]) pdfJobs.push([file.replace(/\.svg$/i, ".pdf"), svg]); };
+  const summarySvg = runSummaryFigure(results, { title: `Run summary: ${path.basename(path.resolve(folder))}` }); if (summarySvg) writeFigure(path.join(out, "summary.svg"), summarySvg);
+  const productsSvg = runProteinFigure(results); if (productsSvg) writeFigure(path.join(out, "protein_products.svg"), productsSvg);
+  const selectionSvg = cloneSelectionFigure(results); if (selectionSvg) writeFigure(path.join(out, "clone_selection.svg"), selectionSvg);
   // all clones laid onto the control: the base calls as an alignment, and the chromatograms stacked (up to 48 clones); per-clone figures with --clone-figures
-  alignedGroups(results).forEach((items, g) => { const tag = g ? `_${g + 1}` : ""; writeFileSync(path.join(out, `clones_alignment${tag}.svg`), clonesAlignmentFigure(items)); if (items.length <= 48) writeFileSync(path.join(out, `clones_aligned${tag}.svg`), clonesAlignedFigure(items)); });
-  if (args["clone-figures"]) { const dir = path.join(out, "chromatograms"); mkdirSync(dir, { recursive: true }); results.forEach((r) => { if (r.ok && r.view) writeFileSync(path.join(dir, `${String(r.name).replace(/[^\w.-]+/g, "_")}.svg`), cloneAlignedFigure(r.view, { name: r.name, decision: r.decision ? r.decision.decision : "", headline: headline(workflowKey, r) })); }); }
+  alignedGroups(results).forEach((items, g) => { const tag = g ? `_${g + 1}` : ""; writeFigure(path.join(out, `clones_alignment${tag}.svg`), clonesAlignmentFigure(items)); if (items.length <= 48) writeFigure(path.join(out, `clones_aligned${tag}.svg`), clonesAlignedFigure(items)); });
+  if (args["clone-figures"]) { const dir = path.join(out, "chromatograms"); mkdirSync(dir, { recursive: true }); results.forEach((r) => { if (r.ok && r.view) writeFigure(path.join(dir, `${String(r.name).replace(/[^\w.-]+/g, "_")}.svg`), cloneAlignedFigure(r.view, { name: r.name, decision: r.decision ? r.decision.decision : "", headline: headline(workflowKey, r) })); }); }
+  for (const [file, svg] of pdfJobs) writeFileSync(file, await svgToPdf(svg));
   writeFileSync(path.join(out, "run.json"), JSON.stringify({ tool: "Assured QC", version: QC_VERSION, finished: new Date().toISOString(), seconds, threads, samples: results.length, samplesPerHour: Math.round((results.length / seconds) * 3600), arguments: { ...args, _: undefined }, geneRecord: genbank ? { file: path.basename(args.genbank), sha256: createHash("sha256").update(genbank).digest("hex"), options: codingOptions } : (designSpec && designSpec.coding && tasks.some((t) => t.options.codingInput) ? { file: "coding block of the design file", sha256: createHash("sha256").update(JSON.stringify(designSpec.coding)).digest("hex"), options: codingOptions } : null), workflow: workflowKey, nuclease, pairingProblems: problems, decisions: tally(results.map((r) => r.decision)) }, null, 1));
   const t = tally(results.map((r) => r.decision)); console.log(`${results.length} samples in ${seconds.toFixed(1)} s on ${threads} thread(s) (${Math.round((results.length / seconds) * 3600)} per hour): accept ${t.accept}, hold ${t.hold}, re-sequence ${t["re-sequence"]}, reject ${t.reject}. Results in ${out}`);
   const panel = panelOf(results); if (panel.length) console.log(`Take forward first: ${panel.join(", ")} (ranked in recommendation.csv).`);

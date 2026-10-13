@@ -1,4 +1,5 @@
-// Browser-only helpers: save an SVG, or rasterise it to a PNG at a given resolution (the SVGs of this app are 1 unit = 1 pixel at 96 dpi).
+// Browser-only helpers: save an SVG, rasterise it to a PNG at a given resolution (the SVGs of this app are 1 unit = 1 pixel at 96 dpi), or write it as a vector PDF.
+import { svgToPdf } from "./svgPdf.js";
 export const downloadBlob = (name, data, type) => {
   const url = URL.createObjectURL(new Blob([data], { type })); const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
@@ -11,3 +12,6 @@ export async function svgToPngBlob(svg, dpi = 300) {
   return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
 }
 export async function savePng(name, svg, dpi = 300) { downloadBlob(name, await svgToPngBlob(svg, dpi), "image/png"); }
+export async function savePdf(name, svg) {
+  try { downloadBlob(name, await svgToPdf(svg), "application/pdf"); } catch (error) { if (typeof window !== "undefined" && window.alert) window.alert(`The PDF could not be written: ${error.message}. The SVG download is unaffected.`); else throw error; }
+}
