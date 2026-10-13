@@ -1,5 +1,13 @@
 # Release notes
 
+## 0.4.2 (2026-10-13)
+
+- Clone recommendation for a wanted edit (SNP, small tag, knock-in; `src/recommend.js`, `docs/recommendation.md`): clones with the same genotype are now replicates and each counts for the panel, ranked by the lower bound of the intended-edit interval (a plate of six clean homozygous clones names up to `--panel N` of them). Before, the best clone of each genotype formed the panel and the others were listed as backups, which suits knockouts (one predicted outcome) but not an edit.
+- New priority `not_recommended`: the sequence does not support the wanted edit (support tier unsupported). Such clones get no rank and are not in the panel; before they could fill the reserve. Action texts for an edit say "carrying the wanted edit".
+- Knockout and deletion workflows rank as in 0.4.1 apart from that new class; the recommendation table for the 8 clones of a real knockout plate is identical to 0.4.1.
+- Reporting only: no estimate, interval, call or decision changes. Of the 41 files hashed in `bench/ENGINE_FREEZE_0.4.1.json`, 38 are byte-identical; `recommend.js`, `summaryFigure.js` and `report.js` (the version string) differ, and `bench/ENGINE_FREEZE_0.4.2.json` records the new hashes. On the 24 clones of a real SNP plate the 32 estimation and decision columns of `results.csv` are identical to 0.4.1. The summary graph and the browser plan column read "not recommended" (`src/summaryFigure.js`, `src/QuickStart.jsx`).
+- `QC_VERSION` and `package.json` read 0.4.2.
+
 ## 0.4.1 (2026-10-12)
 
 - Run summary graph (`src/summaryFigure.js`, `docs/recommendation.md`): one row per sample, best clone first, with the decision, a stacked bar of the alleles and their shares, the edited share or intended edit with its interval, the knockout support and the plan. Browser: above the results table, with SVG and PNG downloads. HTML report: at the top of the summary. Command line: `summary.svg`.

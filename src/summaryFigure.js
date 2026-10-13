@@ -10,7 +10,7 @@ const OTHER = "#98a2b3";
 const DECISION = { accept: ["A", "#d1fadf", "#12b76a"], hold: ["H", "#fef0c7", "#f79009"], "re-sequence": ["S", "#d1e9ff", "#2e90fa"], reject: ["R", "#fee4e2", "#f04438"] };
 const DECISION_LABEL = { accept: "Accept", hold: "Hold", "re-sequence": "Sequence again", reject: "Reject" };
 const TIER_OPACITY = { confirmed: 1, firm: 1, likely: 0.8, possible: 0.62, unsupported: 0.35 };
-const PLAN = { first: "carry forward", confirmed: "confirmed", reserve: "reserve", duplicate: "backup", caution: "protein still made", discard: "discard", resequence: "sequence again" };
+const PLAN = { first: "carry forward", confirmed: "confirmed", reserve: "reserve", duplicate: "backup", caution: "protein still made", not_recommended: "not recommended", discard: "discard", resequence: "sequence again" };
 const natural = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true });
 
 const sizeLabel = (c) => (c.kind === "wt" ? "WT" : c.size ? `${c.size > 0 ? "+" : "\u2212"}${Math.abs(c.size)}` : c.kind === "edit" ? "edit" : "");

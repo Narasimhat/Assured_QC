@@ -30,7 +30,9 @@ the intended-edit interval. Replace the weights with `options.risk` once `assure
 
 Clones that were rejected or need re-sequencing are not ranked. The others are sorted by support, then by fewer distinct alleles (a homozygous clone is easier to read than a compound heterozygote), then by absence of
 a trace-quality warning, then by confidence, then by name. Clones with the same genotype (the same alleles) form a group; the best of each group is a candidate, and the first three candidates (`--panel N`) are
-**carry forward**. The rest are **reserve**; the other members of a group are **backup** (same genotype, so the same predicted outcome). The reasons list the allele-level mechanism, and flags name what weakens
+**carry forward**. The rest are **reserve**; the other members of a group are **backup** (same genotype, so the same predicted outcome).
+
+For a wanted edit (SNP, small tag, knock-in) the clones of one genotype are replicates, not backups: the clones carrying the edit are ranked one by one by the lower bound of the intended-edit interval, and the first `--panel N` of them are carry forward, so a plate with six clean homozygous clones can name all six. A clone whose sequence does not support the wanted edit (support tier unsupported, for example no intended edit, or a wild-type allele in a knockout) is **not recommended**; it is left out of the ranks and the panel. The reasons list the allele-level mechanism, and flags name what weakens
 a ranking: a low-quality trace, a single read, low confidence in the edited share.
 
 ```

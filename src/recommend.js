@@ -84,7 +84,7 @@ const CONF = { high: 0, moderate: 1, low: 2 };
  * @param {Array} results run results (one per sample, each with decision)
  * @returns {Array} one recommendation per result, in the order of `results`:
  *   { rank, score, basis, tier, tierText, priority, action, why, testWith, flags, group, groupOf, duplicateOf }
- *   priority: first | reserve | duplicate | caution (protein measured: truncated or reduced) | resequence | discard | confirmed | none (not a clone)
+ *   priority: first | reserve | duplicate | caution (protein measured: truncated or reduced) | not_recommended (the sequence does not support the wanted edit) | resequence | discard | confirmed | none (not a clone)
  */
 export function recommendClones(results, options = {}) {
   const opt = { ...RECOMMEND_DEFAULTS, ...options, risk: { ...RISK_DEFAULTS, ...(options.risk || {}) } };
@@ -98,7 +98,9 @@ export function recommendClones(results, options = {}) {
     else if (r.reads && r.reads.length === 1) flags.push("one read only");
     if (r.confidence && r.confidence.tier === "low") flags.push("low confidence in the edited share");
     const confirmed = confirmation === "absent"; const against = confirmation === "truncated" || confirmation === "reduced";
-    return { r, support, label, flags, confirmed, against, quality: flags.some((f) => /trace quality/.test(f)) ? 1 : 0, nAlleles: alleles.length || 9 };
+    // knockout clones with the same alleles share a predicted outcome (one mechanism), so the panel takes one per genotype; for a wanted edit (SNP, tag) clones of the same genotype are replicates and all count
+    const knock = r.workflow === "knockout" || r.workflow === "deletion"; const unsupported = !confirmed && !against && support.tier === "unsupported";
+    return { r, support, label, flags, confirmed, against, knock, unsupported, gkey: knock ? label : `sample:${r.name}`, quality: flags.some((f) => /trace quality/.test(f)) ? 1 : 0, nAlleles: alleles.length || 9 };
   });
   const out = results.map(() => ({ rank: null, score: null, basis: "", tier: "", tierText: "", priority: "none", action: "", why: [], testWith: [], flags: [], group: "", groupOf: 0, duplicateOf: null }));
   const eligible = []; 
@@ -112,6 +114,7 @@ export function recommendClones(results, options = {}) {
     base.testWith = x.confirmed ? [] : tests;
     if (d === "reject") { base.priority = "discard"; base.action = "Discard: the result does not carry the wanted edit."; return; }
     if (d === "re-sequence") { base.priority = "resequence"; base.action = "Sequence again before anything else; the current trace cannot settle it."; return; }
+    if (x.unsupported) { base.priority = "not_recommended"; base.action = x.knock ? "Not recommended: the sequence does not predict loss of the protein (a wild-type or protein-making allele is present)." : "Not recommended: the sequence does not support the wanted edit (support under 20)."; return; }
     eligible.push(i);
   });
   eligible.sort((a, b) => { const x = info[a]; const y = info[b];
@@ -119,14 +122,14 @@ export function recommendClones(results, options = {}) {
   const seen = new Map(); let reps = 0;
   eligible.forEach((i, k) => {
     const x = info[i]; const o = out[i]; o.rank = k + 1;
-    if (x.confirmed) { o.priority = "confirmed"; o.action = "Protein absent: use this clone. Consider a second antibody to another region, and out-out PCR for a large deletion on the other allele."; if (!seen.has(x.label)) seen.set(x.label, i); return; }
+    if (x.confirmed) { o.priority = "confirmed"; o.action = "Protein absent: use this clone. Consider a second antibody to another region, and out-out PCR for a large deletion on the other allele."; if (!seen.has(x.gkey)) seen.set(x.gkey, i); return; }
     if (x.against) { o.priority = "caution"; o.action = `Protein measured (${x.r.confirmation.protein}): a protein is still made. Test whether it is functional, or choose another clone.`; return; }
-    if (seen.has(x.label)) { const rep = seen.get(x.label); o.priority = "duplicate"; o.duplicateOf = info[rep].r.name; o.action = `Same genotype as ${info[rep].r.name}: keep as a backup, test only if that clone fails.`; return; }
-    seen.set(x.label, i); reps += 1;
-    if (reps <= opt.panel) { o.priority = "first"; o.action = x.r.decision.decision === "accept" ? "Carry forward; confirm the protein as routine." : "Carry forward and test first (best clone of its genotype)."; }
-    else { o.priority = "reserve"; o.action = "Reserve: test if the first-choice clones fail."; }
+    if (seen.has(x.gkey)) { const rep = seen.get(x.gkey); o.priority = "duplicate"; o.duplicateOf = info[rep].r.name; o.action = `Same genotype as ${info[rep].r.name}: keep as a backup, test only if that clone fails.`; return; }
+    seen.set(x.gkey, i); reps += 1; const accepted = x.r.decision.decision === "accept";
+    if (reps <= opt.panel) { o.priority = "first"; o.action = x.knock ? (accepted ? "Carry forward; confirm the protein as routine." : "Carry forward and test first (best clone of its genotype).") : (accepted ? "Carry forward: one of the best clones carrying the wanted edit." : "Carry forward after checking the flagged points (see the reasons): the genotype is usable but not the cleanest."); }
+    else { o.priority = "reserve"; o.action = x.knock ? "Reserve: test if the first-choice clones fail." : "Reserve: the next best clone carrying the wanted edit; use it if a first-choice clone fails."; }
   });
-  const sizeOf = new Map(); info.forEach((x) => { if (x) sizeOf.set(x.label, (sizeOf.get(x.label) || 0) + 1); }); info.forEach((x, i) => { if (x) out[i].groupOf = sizeOf.get(x.label); });
+  const sizeOf = new Map(); info.forEach((x) => { if (x) sizeOf.set(x.gkey, (sizeOf.get(x.gkey) || 0) + 1); }); info.forEach((x, i) => { if (x) out[i].groupOf = sizeOf.get(x.gkey); });
   return out;
 }
 
