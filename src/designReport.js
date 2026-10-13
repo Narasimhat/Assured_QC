@@ -2,6 +2,8 @@
 // tokenizer: nothing in it is rendered or executed, and scripts, styles, frames and embedded objects are dropped before anything is read.
 // (Approach and section names follow Assured_TraceEdit's design-import.js; this version has no DOM dependency so that the command line can use it.)
 
+import { parseProteinNotes } from "./protein.js";
+
 const VOID = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"]);
 const DROP = new Set(["script", "style", "iframe", "object", "embed", "link", "meta", "svg", "noscript"]);
 const ENTITIES = { "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#39;": "'", "&nbsp;": " " };
@@ -47,10 +49,10 @@ export function parseDesignReport(html) {
       if (!guides.some((g) => g.sequence === sequence)) guides.push({ name: text(cells[0]), sequence });
     }
     const donorSection = sections.find((n) => nodes.indexOf(n) > index && nodes.indexOf(n) < stop && /(?:ssODN\s+Donor\s+Templates|Donor\s+Design)/i.test(text(n)));
-    const donors = [];
+    const donors = []; const proteinTexts = [start ? text(start) : ""];
     if (donorSection) {
       const donorStart = nodes.indexOf(donorSection); const next = sections.find((n) => nodes.indexOf(n) > donorStart);
-      const donorEnd = Math.min(stop, next ? nodes.indexOf(next) : stop); const donorNodes = nodes.slice(donorStart + 1, donorEnd);
+      const donorEnd = Math.min(stop, next ? nodes.indexOf(next) : stop); const donorNodes = nodes.slice(donorStart + 1, donorEnd); proteinTexts.push(donorNodes.map((n) => n.parts.join(" ")).join(" "));
       for (const label of donorNodes) {
         if (label.children.some((c) => c.tag !== "span") || !/^(?:Donor|Donor ssODN)$/i.test(text(label))) continue;
         const siblings = label.parent.children; const sibling = siblings[siblings.indexOf(label) + 1];
@@ -62,7 +64,7 @@ export function parseDesignReport(html) {
         donors.push({ name, sequence, recommended });
       }
     }
-    if (guides.length) designs.push({ title: start ? text(start) : "Assured design", guides, donors });
+    if (guides.length) designs.push({ title: start ? text(start) : "Assured design", guides, donors, protein: parseProteinNotes(proteinTexts) });
   }
   if (!designs.length) throw new Error("No supported Assured Design gRNA section found. Upload the exported design HTML report; PDF and order sheets are not supported.");
   return designs;

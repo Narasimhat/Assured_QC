@@ -71,3 +71,7 @@ with 35% intended and 10% blocking-only edits is reported as 50% HDR.
 
 These traces are synthetic (linear mixture model, own generator); behaviour on real traces is to be confirmed on your own
 control/edited pairs in the validation step.
+
+## Protein annotation of the markers
+
+The QC app reads the codons a design names and, from them, the strand and reading frame of the control read: `p.L173L` with `CTG>CTC` on a marker, `R176C (CGC>TGC)` in `design.label`, or `p.L177L: CTG -> CTA` in a design report. Every marker then carries `protein` (`residue`, `from`, `to`, `codonFrom`, `codonTo`, `silent`, `label`), including the intended change, whose residue follows from the frame. Name at least one codon change in the hand-off (a silent blocking change is enough); a base labelled noncoding, or lying past the first in-frame stop codon, is not annotated. The figures use it for the marker labels, a protein row over the control, and a box under each clone at the designed codons. It does not enter any estimate.

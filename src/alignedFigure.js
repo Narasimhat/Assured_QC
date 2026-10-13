@@ -3,6 +3,7 @@
 // changes, both chromatograms base by base, and every base that differs from the control. Vector SVG with real text, 1 unit = 1 pixel at 96 dpi;
 // no scripts and no external resources.
 import { summaryOrder } from "./summaryFigure.js";
+import { aaOf } from "./protein.js";
 
 const esc = (v) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const INK = "#101828"; const MUTED = "#475467"; const CUT = "#d92d20";
@@ -21,7 +22,7 @@ function frame(view, { width, ml, mr }) {
 function annotation(view, F, y0) {
   let svg = ""; const rows = []; const sorted = [...view.markers].sort((a, b) => a.at - b.at);
   sorted.forEach((m) => {
-    const text = `${m.label ? `${m.label} ` : ""}${m.change}`; const half = (text.length * 4.4) / 2; const x0 = F.x(m.at) - half; const x1 = F.x(m.at) + half;
+    const text = m.protein ? `${m.protein.label}${m.protein.silent ? " silent" : ""} ${m.protein.codonFrom}>${m.protein.codonTo}` : `${m.label ? `${m.label} ` : ""}${m.change}`; const half = (text.length * 4.4) / 2; const x0 = F.x(m.at) - half; const x1 = F.x(m.at) + half;
     let r = 0; while (rows[r] !== undefined && rows[r] > x0 - 4) r += 1; rows[r] = x1;
     svg += `<text x="${fmt(F.x(m.at))}" y="${y0 + 9 + r * 10}" text-anchor="middle" font-size="8" font-weight="700" fill="${MARKER_COLOR(m.role)}">${esc(text)}</text>`;
   });
@@ -37,7 +38,56 @@ function annotation(view, F, y0) {
     }
     y += 12;
   });
+  if (view.protein) { svg += aaTrack(view, F, y); y += 14; }
   return { svg, height: y - y0 + 4 };
+}
+
+const COMPL = { A: "T", C: "G", G: "C", T: "A", N: "N" };
+
+/** The control read translated in the design's reading frame: one box per codon, the designed codons coloured and numbered. */
+function aaTrack(view, F, y) {
+  const p = view.protein; if (!p || !p.codons.length) return "";
+  const designed = new Map(); view.markers.forEach((m) => { if (m.protein) designed.set(m.protein.residue, m); });
+  let svg = `<text x="${fmt(F.ml - 6)}" y="${y + 8.5}" text-anchor="end" font-size="8" fill="${MUTED}">protein</text>`;
+  p.codons.forEach((cd) => {
+    const lo = Math.min(...cd.cols.map((i) => F.xl(i))); const x0 = lo + 0.5; const w = Math.max(...cd.cols.map((i) => F.xl(i))) + F.step - lo - 1;
+    const m = designed.get(cd.residue); const color = m ? MARKER_COLOR(m.role) : "#98a2b3";
+    svg += `<rect x="${fmt(x0)}" y="${y}" width="${fmt(w)}" height="11" rx="2.5" fill="${color}" fill-opacity="${m ? 0.2 : 0.08}" stroke="${color}" stroke-opacity="${m ? 1 : 0.5}"/>`;
+    if (w >= 13) svg += `<text x="${fmt(x0 + w / 2)}" y="${y + 8.5}" text-anchor="middle" font-size="8" font-weight="${m ? 700 : 400}" fill="${m ? color : MUTED}">${esc(m ? `${cd.aa}${cd.residue}` : cd.aa)}</text>`;
+  });
+  return svg;
+}
+
+/** Under a clone: its residue at each designed codon (purple or orange as designed, grey as the control, red otherwise) and at up to three codons that changed without being designed. */
+function cloneChips(view, F, y) {
+  const p = view.protein; if (!p) return "";
+  const calls = view.edited.calls; const second = view.edited.second || ""; const rev = p.strand === "-"; let svg = "";
+  const base = (x) => (rev ? COMPL[x] || "N" : x);
+  const codonAt = (cols) => { const b = cols.map((i) => calls[i]); return b.some((x) => x === undefined || x === "-") ? null : b.map(base).join(""); };
+  const chip = (cols, text, color, title, dashed = false) => {
+    const lo = Math.min(...cols.map((i) => F.xl(i))); const x0 = lo + 0.5; const w = Math.max(...cols.map((i) => F.xl(i))) + F.step - lo - 1;
+    return `<g><title>${esc(title)}</title><rect x="${fmt(x0)}" y="${y}" width="${fmt(w)}" height="11" rx="2.5" fill="${color}" fill-opacity="0.16" stroke="${color}"${dashed ? ' stroke-dasharray="2 1.5"' : ""}/><text x="${fmt(x0 + w / 2)}" y="${y + 8.5}" text-anchor="middle" font-size="8" font-weight="700" fill="${color}">${esc(text)}</text></g>`;
+  };
+  const designed = new Set();
+  view.markers.forEach((m) => {
+    if (!m.protein) return; const cols = m.protein.cols; designed.add(m.protein.residue); const label = m.protein.residue;
+    const cd = codonAt(cols);
+    if (!cd) { svg += chip(cols, "\u2013", "#98a2b3", `${m.protein.label}: the clone lacks these bases`); return; }
+    const mixedCols = cols.filter((i) => second[i] && second[i] !== " ");
+    const color = cd === m.protein.codonTo ? MARKER_COLOR(m.role) : cd === m.protein.codonFrom ? "#667085" : "#d92d20";
+    const aa = aaOf(cd); let text = `${aa}${label}`; let title = `${m.protein.label}: clone codon ${cd} (${aa}), control ${m.protein.codonFrom}, designed ${m.protein.codonTo}`;
+    if (mixedCols.length === 1) {
+      const alt = cols.map((i) => (i === mixedCols[0] ? base(second[i]) : base(calls[i]))).join(""); const aaAlt = aaOf(alt);
+      text = aa === aaAlt ? text : `${aa}/${aaAlt}${label}`; title += `; a second base is at least 20% of the signal at one position (codon ${alt}, ${aaAlt})`;
+      svg += chip(cols, text, color, title, true);
+    } else svg += chip(cols, mixedCols.length > 1 ? `${text}?` : text, color, mixedCols.length > 1 ? `${title}; mixed signal at several positions` : title, mixedCols.length > 1);
+  });
+  if (view.mode === "offset") {
+    const changed = [];
+    p.codons.forEach((cd) => { if (designed.has(cd.residue)) return; const c = codonAt(cd.cols); if (c && !c.includes("N") && aaOf(c) !== cd.aa) changed.push({ cd, c }); });
+    if (changed.length && changed.length <= 3) changed.forEach(({ cd, c }) => { svg += chip(cd.cols, `${cd.aa}${cd.residue}${aaOf(c)}`, "#d92d20", `Not designed: ${cd.aa}${cd.residue}${aaOf(c)} (codon ${c})`); });
+  }
+  return svg;
 }
 
 function guideLines(view, F, top, bottom) {
@@ -104,6 +154,7 @@ function legend(F, x, y, view) {
   items.forEach(([c, t]) => { out += `<rect x="${cx}" y="${y - 7}" width="8" height="8" fill="${c}"/><text x="${cx + 11}" y="${y}" font-size="8.5" fill="${MUTED}">${t}</text>`; cx += 28; });
   out += `<text x="${cx + 6}" y="${y}" font-size="8.5" fill="${MUTED}">Shaded column: designed change (orange blocks a PAM, purple is the edit). Dashed red line: cut.</text>`;
   out += `<text x="${x}" y="${y + 12}" font-size="8.5" fill="${MUTED}">Red base: differs from the control. Grey block: bases the clone lacks.${view.mode === "gapped" ? "" : " The clone is laid onto the control at the offset used in the analysis."}</text>`;
+  if (view.protein) out += `<text x="${x}" y="${y + 24}" font-size="8.5" fill="${MUTED}">Protein row: the control in the reading frame of the design. Box under a clone: its residue at each designed codon (as designed: purple or orange; as the control: grey; other: red).</text>`;
   return out;
 }
 
@@ -113,7 +164,7 @@ export function cloneAlignedFigure(view, { name = "clone", decision = "", headli
   const ml = 92; const mr = 14; const F = frame(view, { width, ml, mr }); const h = 56;
   const top = 44; const ann = annotation(view, F, top); const yC = top + ann.height + 12; const yE = yC + 12 + h + 22; const bottom = yE + 12 + h;
   const [chip, chipBg, chipLine] = DECISION[decision] || ["", "#f2f4f7", "#98a2b3"]; const gl = guideLines(view, F, yC - 12, bottom);
-  const height = bottom + 46;
+  const height = bottom + 46 + (view.protein ? 14 : 0);
   let svg = svgOpen(width, height, `${name} aligned with the wild-type control`);
   svg += `<text x="8" y="18" font-size="13" font-weight="700" fill="${INK}">${esc(name)}</text>`;
   if (chip) svg += `<rect x="8" y="24" width="14" height="14" rx="3" fill="${chipBg}" stroke="${chipLine}"/><text x="15" y="35" text-anchor="middle" font-size="9.5" fill="${INK}">${chip}</text>`;
@@ -122,7 +173,7 @@ export function cloneAlignedFigure(view, { name = "clone", decision = "", headli
   svg += `<text x="8" y="${yC + 30}" font-size="10" font-weight="700" fill="${INK}">Wild type</text><text x="8" y="${yC + 42}" font-size="8.5" fill="${MUTED}">control</text>`;
   svg += letters(view.control.calls, F, yC) + strip(view.control.curves, null, F, yC + 4, h);
   svg += `<text x="8" y="${yE + 30}" font-size="10" font-weight="700" fill="${INK}">${esc(name.length > 14 ? `${name.slice(0, 13)}\u2026` : name)}</text><text x="8" y="${yE + 42}" font-size="8.5" fill="${MUTED}">clone</text>`;
-  svg += gapBlocks(view, F, yE + 4, h) + letters(view.edited.calls, F, yE, view.control.calls, view.edited.second) + strip(view.edited.curves, view.edited.calls, F, yE + 4, h);
+  svg += gapBlocks(view, F, yE + 4, h) + letters(view.edited.calls, F, yE, view.control.calls, view.edited.second) + strip(view.edited.curves, view.edited.calls, F, yE + 4, h) + cloneChips(view, F, yE + 4 + h + 3);
   svg += gl.cuts + legend(F, ml, bottom + 26, view) + "</svg>";
   return svg;
 }
@@ -148,9 +199,9 @@ export function alignedGroups(results) {
 /** All clones of one design on the same stretch: the control, then every clone's chromatogram, best first. */
 export function clonesAlignedFigure(items, { title = "All clones aligned with the wild-type control", width = 980 } = {}) {
   if (!items || !items.length) return "";
-  const v0 = items[0].view; const ml = 150; const mr = 14; const F = frame(v0, { width, ml, mr }); const h = 30; const rowH = h + 16;
+  const v0 = items[0].view; const ml = 150; const mr = 14; const F = frame(v0, { width, ml, mr }); const h = 30; const rowH = h + 16 + (v0.protein ? 12 : 0);
   const top = 34; const ann = annotation(v0, F, top); const y0 = top + ann.height + 10; const bottom = y0 + (items.length + 1) * rowH; const gl = guideLines(v0, F, y0 - 2, bottom);
-  const height = bottom + 40; let svg = svgOpen(width, height, title);
+  const height = bottom + 40 + (v0.protein ? 14 : 0); let svg = svgOpen(width, height, title);
   svg += `<text x="8" y="18" font-size="13" font-weight="700" fill="${INK}">${esc(title)}</text>` + ann.svg + gl.bands;
   const rows = [{ name: "Wild type", sub: "control", view: v0, control: true }, ...items];
   rows.forEach((it, r) => {
@@ -159,7 +210,7 @@ export function clonesAlignedFigure(items, { title = "All clones aligned with th
     if (chip) svg += `<rect x="${ml - 24}" y="${y + 10}" width="14" height="14" rx="3" fill="${bg}" stroke="${line}"/><text x="${ml - 17}" y="${y + 21}" text-anchor="middle" font-size="9.5" fill="${INK}">${chip}</text>`;
     svg += `<text x="8" y="${y + 33}" font-size="8" fill="${MUTED}">${esc(it.control ? it.sub : it.note)}</text>`;
     if (it.control) svg += letters(v.control.calls, F, y + 9) + strip(v.control.curves, null, F, y + 12, h, { lw: 0.8 });
-    else svg += mismatchBands(v, F, y, h + 12) + gapBlocks(v, F, y + 12, h, true) + letters(v.edited.calls, F, y + 9, v.control.calls, v.edited.second) + strip(v.edited.curves, v.edited.calls, F, y + 12, h, { lw: 0.8 });
+    else svg += mismatchBands(v, F, y, h + 12) + gapBlocks(v, F, y + 12, h, true) + letters(v.edited.calls, F, y + 9, v.control.calls, v.edited.second) + strip(v.edited.curves, v.edited.calls, F, y + 12, h, { lw: 0.8 }) + cloneChips(v, F, y + 12 + h + 2);
   });
   svg += gl.cuts + legend(F, ml, bottom + 18, v0) + "</svg>";
   return svg;
@@ -170,7 +221,7 @@ export function clonesAlignmentFigure(items, { title = "Base calls of all clones
   if (!items || !items.length) return "";
   const v0 = items[0].view; const n = v0.length; const ml = 150; const mr = 90; const cw = Math.max(7, Math.min(13, Math.floor((width - ml - mr) / n))); const W = ml + n * cw + mr;
   const F = frame(v0, { width: W, ml, mr }); const rh = 15; const top = 34; const ann = annotation(v0, F, top); const yR = top + ann.height + 14; const yRows = yR + rh + 4;
-  const bottom = yRows + items.length * rh; const gl = guideLines(v0, F, yR - 12, bottom); const height = bottom + 44; let svg = svgOpen(W, height, title);
+  const bottom = yRows + items.length * rh; const gl = guideLines(v0, F, yR - 12, bottom); const height = bottom + 44 + (v0.protein ? 12 : 0); let svg = svgOpen(W, height, title);
   svg += `<text x="8" y="18" font-size="13" font-weight="700" fill="${INK}">${esc(title)}</text>` + ann.svg + gl.bands;
   // ruler: bases from the first cut
   const c0 = Math.min(...v0.guides.map((g) => g.cut));
@@ -197,6 +248,6 @@ export function clonesAlignmentFigure(items, { title = "Base calls of all clones
     (v.edited.insertions || []).forEach((ins) => { svg += `<path d="M${fmt(F.xl(ins.before))},${y + 1} l-3,0 l3,6 l3,-6 z" fill="#7a5af8"><title>${esc(it.name)}: ${ins.n} extra base${ins.n === 1 ? "" : "s"} here</title></path>`; });
     svg += `<text x="${fmt(ml + n * cw + 8)}" y="${y + 11}" font-size="8.5" fill="${MUTED}">${esc(it.note)}</text>`;
   });
-  svg += gl.cuts + `<text x="${ml}" y="${bottom + 20}" font-size="8.5" fill="${MUTED}">Dot: same base as the control. Coloured base: differs from the control. Dash: the clone lacks the base. Purple triangle: extra bases in the clone.</text><text x="${ml}" y="${bottom + 32}" font-size="8.5" fill="${MUTED}">Dashed or half-and-half cell: a second base is at least 20% of the signal. Dashed red line: cut. Shaded column: designed change.</text></svg>`;
+  svg += gl.cuts + `<text x="${ml}" y="${bottom + 20}" font-size="8.5" fill="${MUTED}">Dot: same base as the control. Coloured base: differs from the control. Dash: the clone lacks the base. Purple triangle: extra bases in the clone.</text><text x="${ml}" y="${bottom + 32}" font-size="8.5" fill="${MUTED}">Dashed or half-and-half cell: a second base is at least 20% of the signal. Dashed red line: cut. Shaded column: designed change.</text>${v0.protein ? `<text x="${ml}" y="${bottom + 44}" font-size="8.5" fill="${MUTED}">Protein row: the control read in the reading frame of the design; designed codons are coloured and numbered.</text>` : ""}</svg>`;
   return svg;
 }
