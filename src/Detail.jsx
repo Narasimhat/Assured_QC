@@ -1,7 +1,7 @@
 import { headline } from "./batch.js";
 import { cloneProteinFigure } from "./proteinFigure.js";
 import { cloneAlignedFigure } from "./alignedFigure.js";
-import { saveSvg, savePng } from "./saveFigure.js";
+import { saveSvg, savePng, savePdf } from "./saveFigure.js";
 
 const pct = (value) => (value === null || value === undefined ? "n/a" : `${(value * 100).toFixed(1)}%`);
 
@@ -48,7 +48,7 @@ export default function Detail({ workflow, result }) {
         <div>
           <h3>Chromatogram aligned with the wild-type control</h3>
           <div className="chart" dangerouslySetInnerHTML={{ __html: svg }} />
-          <p><button type="button" className="link" onClick={() => saveSvg(`${result.name}_aligned.svg`, svg)}>Aligned chromatogram (SVG)</button><button type="button" className="link" onClick={() => savePng(`${result.name}_aligned_300dpi.png`, svg)}>Aligned chromatogram (PNG, 300 dpi)</button></p>
+          <p><button type="button" className="link" onClick={() => saveSvg(`${result.name}_aligned.svg`, svg)}>Aligned chromatogram (SVG)</button><button type="button" className="link" onClick={() => savePng(`${result.name}_aligned_300dpi.png`, svg)}>Aligned chromatogram (PNG, 300 dpi)</button><button type="button" className="link" onClick={() => savePdf(`${result.name}_aligned.pdf`, svg)}>Aligned chromatogram (PDF)</button></p>
         </div>
       ); })()}
       {result.functional && (
@@ -64,7 +64,7 @@ export default function Detail({ workflow, result }) {
           {(() => { const svg = cloneProteinFigure(result); return svg ? (
             <div>
               <div className="chart" dangerouslySetInnerHTML={{ __html: svg }} />
-              <p><button type="button" className="link" onClick={() => saveSvg(`${result.name}_protein_products.svg`, svg)}>Protein products (SVG)</button><button type="button" className="link" onClick={() => savePng(`${result.name}_protein_products_300dpi.png`, svg)}>Protein products (PNG, 300 dpi)</button></p>
+              <p><button type="button" className="link" onClick={() => saveSvg(`${result.name}_protein_products.svg`, svg)}>Protein products (SVG)</button><button type="button" className="link" onClick={() => savePng(`${result.name}_protein_products_300dpi.png`, svg)}>Protein products (PNG, 300 dpi)</button><button type="button" className="link" onClick={() => savePdf(`${result.name}_protein_products.pdf`, svg)}>Protein products (PDF)</button></p>
             </div>
           ) : null; })()}
           <p className="muted">Predicted from sequence only. Nonsense-mediated decay follows the exon-junction rules (a stop in the last coding exon, within 55 nt of the last junction, within 150 nt of the start codon, or in a coding exon over 407 nt escapes); these rules fail for roughly a third of premature stops. A knockout is confirmed by loss of protein.</p>

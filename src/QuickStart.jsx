@@ -11,7 +11,7 @@ import { runProteinFigure } from "./proteinFigure.js";
 import { runSummaryFigure } from "./summaryFigure.js";
 import { alignedGroups, clonesAlignedFigure, clonesAlignmentFigure } from "./alignedFigure.js";
 import { cloneSelectionFigure } from "./selectionFigure.js";
-import { saveSvg, savePng } from "./saveFigure.js";
+import { saveSvg, savePng, savePdf } from "./saveFigure.js";
 import { NUCLEASES } from "./nucleases.js";
 import Detail from "./Detail.jsx";
 
@@ -90,6 +90,7 @@ export default function QuickStart() {
       const svg = await new Promise((resolve, reject) => { worker.onmessage = (e) => (e.data.figure ? resolve(e.data.figure) : reject(new Error(e.data.figureError))); worker.postMessage({ id: 1, figure: { name: task.name, spec: task.spec, sampleType: task.sampleType, workflow: task.workflow, control: { name: task.controls[0], buffer: buffers.current.get(task.controls[0]).slice(0) }, edited: { name: task.edited[0], buffer: buffers.current.get(task.edited[0]).slice(0) } } }); });
       worker.terminate();
       if (format === "svg") download(`${task.name}_figure.svg`, svg, "image/svg+xml");
+      else if (format === "pdf") await savePdf(`${task.name}_figure.pdf`, svg);
       else { const scale = 300 / 96; const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" })); const img = new Image(); await new Promise((ok, bad) => { img.onload = ok; img.onerror = bad; img.src = url; }); const canvas = document.createElement("canvas"); canvas.width = Math.round(img.width * scale); canvas.height = Math.round(img.height * scale); const ctx = canvas.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0, canvas.width, canvas.height); URL.revokeObjectURL(url); canvas.toBlob((blob) => download(`${task.name}_figure_300dpi.png`, blob, "image/png")); }
     } catch (e) { setError(`Could not make the figure: ${e.message}`); }
     setFigureBusy(false);
@@ -181,6 +182,7 @@ export default function QuickStart() {
               <p>
                 <button type="button" className="link" onClick={() => saveSvg(`assured_qc_clone_selection_${stamp}.svg`, selectionSvg)}>Clone selection (SVG)</button>
                 <button type="button" className="link" onClick={() => savePng(`assured_qc_clone_selection_${stamp}_300dpi.png`, selectionSvg)}>Clone selection (PNG)</button>
+                <button type="button" className="link" onClick={() => savePdf(`assured_qc_clone_selection_${stamp}.pdf`, selectionSvg)}>Clone selection (PDF)</button>
               </p>
             </details>
           )}
@@ -193,8 +195,10 @@ export default function QuickStart() {
               <p>
                 <button type="button" className="link" onClick={() => saveSvg(`assured_qc_clones_alignment_${stamp}.svg`, g.grid)}>Base-call alignment (SVG)</button>
                 <button type="button" className="link" onClick={() => savePng(`assured_qc_clones_alignment_${stamp}_300dpi.png`, g.grid)}>Base-call alignment (PNG)</button>
+                <button type="button" className="link" onClick={() => savePdf(`assured_qc_clones_alignment_${stamp}.pdf`, g.grid)}>Base-call alignment (PDF)</button>
                 {g.stack && <button type="button" className="link" onClick={() => saveSvg(`assured_qc_clones_aligned_${stamp}.svg`, g.stack)}>Chromatograms (SVG)</button>}
                 {g.stack && <button type="button" className="link" onClick={() => savePng(`assured_qc_clones_aligned_${stamp}_300dpi.png`, g.stack)}>Chromatograms (PNG)</button>}
+                {g.stack && <button type="button" className="link" onClick={() => savePdf(`assured_qc_clones_aligned_${stamp}.pdf`, g.stack)}>Chromatograms (PDF)</button>}
               </p>
             </details>
           ))}
@@ -207,7 +211,9 @@ export default function QuickStart() {
             <button type="button" className="link" onClick={() => download(`assured_qc_recommendation_${stamp}.csv`, recommendationCsv(ranked), "text/csv")}>Recommendation (CSV)</button>
             {summaryFigure && <button type="button" className="link" onClick={() => saveSvg(`assured_qc_summary_${stamp}.svg`, summaryFigure)}>Summary graph (SVG)</button>}
             {summaryFigure && <button type="button" className="link" onClick={() => savePng(`assured_qc_summary_${stamp}_300dpi.png`, summaryFigure)}>Summary graph (PNG)</button>}
+            {summaryFigure && <button type="button" className="link" onClick={() => savePdf(`assured_qc_summary_${stamp}.pdf`, summaryFigure)}>Summary graph (PDF)</button>}
             {runFigure && <button type="button" className="link" onClick={() => download(`assured_qc_protein_products_${stamp}.svg`, runFigure, "image/svg+xml")}>Protein products (SVG)</button>}
+            {runFigure && <button type="button" className="link" onClick={() => savePdf(`assured_qc_protein_products_${stamp}.pdf`, runFigure)}>Protein products (PDF)</button>}
           </p>
           <div className="scroll">
             <table><thead><tr><th>Decision</th><th>Sample</th><th>Result</th><th>Edited, 95% interval</th><th>Confidence</th><th>Priority</th></tr></thead><tbody>
@@ -220,7 +226,7 @@ export default function QuickStart() {
           </div>
           {result && <div className="card"><p><b>{LABEL[result.decision.decision]}.</b> {result.decision.reasons.join(" ")} <span className="muted">{result.decision.next}</span></p>
             {recommendation && recommendation.priority !== "none" && <p><b>{/^KO score/.test(recommendation.basis || "") ? "KO score" : /^HDR score/.test(recommendation.basis || "") ? "HDR score, lower bound" : "Knockout support"} {recommendation.score} ({recommendation.tier}).</b> {recommendation.action} <span className="muted">{recommendation.why.join(" | ")}{recommendation.flags.length ? ` Note: ${recommendation.flags.join("; ")}.` : ""} The weights behind the support are provisional; only a protein result settles a knockout.</span></p>}
-            <p><button type="button" className="link" disabled={figureBusy || !result.ok} onClick={() => figure("svg")}>Figure (SVG)</button><button type="button" className="link" disabled={figureBusy || !result.ok} onClick={() => figure("png")}>Figure (PNG, 300 dpi)</button></p></div>}
+            <p><button type="button" className="link" disabled={figureBusy || !result.ok} onClick={() => figure("svg")}>Figure (SVG)</button><button type="button" className="link" disabled={figureBusy || !result.ok} onClick={() => figure("png")}>Figure (PNG, 300 dpi)</button><button type="button" className="link" disabled={figureBusy || !result.ok} onClick={() => figure("pdf")}>Figure (PDF)</button></p></div>}
           {result && <Detail workflow={outcome.workflow} result={result} />}
         </>
       )}
