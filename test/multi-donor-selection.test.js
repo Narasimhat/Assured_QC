@@ -64,3 +64,14 @@ test("the clone selection figure and the report section: chromatograms of the cl
   const html = buildQcReportHtml({ workflow: "snp", results: rs }); assert.ok(html.indexOf("Clone selection") < html.indexOf("All clones aligned"));
   assert.equal(cloneSelectionFigure([]), ""); assert.equal(selectionSection([{ ok: false, name: "x" }], "snp"), "");
 });
+
+test("SNP and small-tag runs name the intended-edit share the HDR score (ICE's KI score): table, figure, headline and ranking basis", () => {
+  const plan = planDesign({ control, guides, donor: A, gene: "sample" });
+  const make = (key, name, decision) => { const t = truth[key]; const r = analyseSample({ name, spec: plan.spec, control: loadTrace(t.control), edited: loadTrace(t.edited), sampleType: "clone" }); return { ...r, workflow: "snp", decision: { decision, reasons: [], next: "" } }; };
+  const rs = withRecommendations([make("apoe_snp_clone_hom", "clone_hom", "accept"), make("apoe_snp_clone_het", "clone_het", "hold")]);
+  assert.match(rs[0].recommendation.basis, /^HDR score/);
+  const svg = cloneSelectionFigure(rs); assert.match(svg, /HDR score \(95% interval\)/); assert.match(svg, /KI score/);
+  const shown = (svg.match(/\d+\.\d \((?:\d+(?:\.\d+)?)\u2013(?:\d+(?:\.\d+)?)\)/g) || []); assert.ok(shown.length >= 2, `a score with its interval for each clone: ${shown}`);
+  const html = buildQcReportHtml({ workflow: "snp", results: rs }); assert.match(html, /<th>HDR score \(intended edit\)<\/th>/); assert.match(html, /HDR score \d+(\.\d+)?-\d+(\.\d+)?%/);
+  assert.ok(!/KO score/.test(svg), "an edit run does not talk about a KO score");
+});

@@ -38,7 +38,7 @@ export default function Detail({ workflow, result }) {
       <p>{headline(workflow, result)}</p>
       {result.genotype && <ul>{result.genotype.flags.map((f) => <li key={f} className="muted">{f}</li>)}</ul>}
       <table>
-        <thead><tr><th>Wild type</th><th>Edited</th><th>Indels</th><th>Between cuts</th><th>Intended edit</th><th>Blocking-only</th><th>{result.functional ? "Frameshift score (proxy)" : "KO score (frameshift proxy)"}</th>{result.functional && <th>Functional KO</th>}<th>Unexplained</th></tr></thead>
+        <thead><tr><th>Wild type</th><th>Edited</th><th>Indels</th><th>Between cuts</th><th>{workflow === "snp" || workflow === "tag_small" ? "HDR score (intended edit)" : "Intended edit"}</th><th>Blocking-only</th><th>{result.functional ? "Frameshift score (proxy)" : "KO score (frameshift proxy)"}</th>{result.functional && <th>Functional KO</th>}<th>Unexplained</th></tr></thead>
         <tbody><tr><td>{s.wtPct}%</td><td>{s.editedPct}%</td><td>{s.indelPct}%</td><td>{s.betweenCutsPct}%</td><td>{s.intendedEditPct}%</td><td>{s.partialConversionPct}%</td><td>{s.koScorePct}%</td>{result.functional && <td>{s.functionalKoPct}%</td>}<td>{s.unexplainedPct ?? 0}%</td></tr></tbody>
       </table>
       {!result.functional && (workflow === "knockout" || workflow === "deletion") && (

@@ -132,7 +132,7 @@ export function headline(workflow, r) {
   if (r.kind === "junction") return `${r.verdict.summary}${r.spans.fivePrimeJunction === false ? "; 5' junction not spanned" : ""}${r.spans.threePrimeJunction === false ? "; 3' junction not spanned" : ""}`;
   const s = r.summary;
   if (r.genotype) return `${r.genotype.summary}${r.functional ? ` (${FUNCTIONAL_WORDS[r.functional.call.status] || r.functional.call.status})` : ""}`;
-  if (workflow === "snp" || workflow === "tag_small") return `Intended edit ${s.intendedEditPct}%, blocking-only ${s.partialConversionPct}%, indels ${s.indelPct}%, wild type ${s.wtPct}%`;
+  if (workflow === "snp" || workflow === "tag_small") return `HDR score ${s.intendedEditPct}%, blocking-only ${s.partialConversionPct}%, indels ${s.indelPct}%, wild type ${s.wtPct}%`;
   if (workflow === "deletion") return `Edited ${s.editedPct}% (deletion between cuts ${s.betweenCutsPct}%), KO score ${s.koScorePct}%`;
   return `Edited ${s.editedPct}%, KO score ${s.koScorePct}%, wild type ${s.wtPct}%`;
 }

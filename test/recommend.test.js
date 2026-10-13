@@ -80,7 +80,7 @@ test("equal support: the clone without a trace-quality warning goes first, and t
 
 test("without a gene record the support is the frameshift proxy and says so; edit workflows rank by the intended-edit lower bound", () => {
   const ko = clone("k", [NMD("a")]); delete ko.functional; ko.summary = { wtPct: 5, editedPct: 95, koScorePct: 100 };
-  const r = recommendClones([ko])[0]; assert.equal(r.score, 95); assert.match(r.basis, /no gene record/);
+  const r = recommendClones([ko])[0]; assert.equal(r.score, 95); assert.match(r.basis, /^KO score/); assert.match(r.basis, /no gene record/);
   const snp = { ok: true, kind: "trace-pair", name: "s", workflow: "snp", sampleType: "clone", confidence: { tier: "high" }, warnings: [], summary: { intendedEditPct: 90 }, intervals: { intendedEditPct: [86, 94] }, genotype: { category: "homozygous_edit", alleles: [{ label: "Intended edit", kind: "edit", size: 0 }] }, decision: { decision: "accept", reasons: [], next: "" } };
   const s = recommendClones([snp])[0]; assert.equal(s.score, 86); assert.equal(s.tier, "firm"); assert.deepEqual(s.testWith, []);
   assert.deepEqual(recommendClones([{ ok: true, kind: "junction", name: "j", decision: { decision: "accept", reasons: [] } }, { ok: false, name: "e", decision: { decision: "re-sequence", reasons: ["x"] } }]).map((x) => x.priority), ["none", "none"]);
@@ -146,4 +146,16 @@ test("a wanted edit: clones of the same genotype are replicates and all count; c
   assert.deepEqual(["a", "b", "c", "d"].map((n) => by[n].rank), [1, 2, 3, 4], "ranks are contiguous: not recommended clones take none");
   assert.deepEqual(panelOf(withRecommendations(results, { panel: 3 })), ["a", "b", "c"]);
   const ko = clone("k", [NMD("x", 0.5), WT(0.5)]); assert.equal(recommendClones([ko])[0].priority, "not_recommended", "a knockout clone with wild type is not recommended");
+});
+
+test("a knockout plate without a gene record: the default panel is three (not zero), the KO score is named, up to two clones of one deletion count, ties go to the narrower interval", () => {
+  const ko = (name, alleles, lo, over = {}) => ({ ok: true, kind: "trace-pair", name, workflow: "deletion", sampleType: "clone", confidence: { tier: "high" }, warnings: [], summary: { wtPct: 0, editedPct: 100, koScorePct: 100 }, intervals: { editedPct: [98, 100], koScorePct: [lo, 100] },
+    genotype: { category: alleles.length === 1 ? "homozygous_indel" : "compound_heterozygous", alleles: alleles.map((a) => ({ label: `Deletion between cuts (${a} bp)`, kind: "deletion_between_cuts", size: -a })) },
+    contributions: alleles.map((a) => ({ label: `Deletion between cuts (${a} bp)`, kind: "deletion_between_cuts", size: -a, fraction: 1 / alleles.length })), decision: { decision: "accept", reasons: [], next: "" }, ...over });
+  const results = [ko("a1", [79], 98.8), ko("a2", [78], 99), ko("a3", [79], 99), ko("a4", [79], 99), ko("a5", [79], 99), ko("c1", [84, 79], 98.3), ko("c2", [77, 79], 86.5)];
+  const rec = withRecommendations(results); const by = Object.fromEntries(rec.map((r) => [r.name, r.recommendation]));
+  assert.deepEqual(panelOf(rec), ["a2", "a3", "a4"], "no panel option given: three clones, the narrower intervals first, at most two of the same deletion");
+  assert.match(by.a2.basis, /^KO score/); assert.equal(by.a5.priority, "duplicate"); assert.equal(by.a1.priority, "duplicate"); assert.equal(by.c1.priority, "reserve");
+  assert.match(by.a4.action, /second clone with the same deletion/); assert.deepEqual(panelOf(withRecommendations(results, { panel: undefined })), ["a2", "a3", "a4"], "an undefined panel option is not a zero");
+  assert.deepEqual(panelOf(withRecommendations(results, { panel: 1 })), ["a2"]);
 });

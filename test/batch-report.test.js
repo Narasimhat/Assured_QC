@@ -32,7 +32,7 @@ test("a sample result is plain data with charts and a one-line headline", () => 
   assert.match(r.charts.discordance, /^<svg/);
   assert.match(headline("snp", r), /partial conversion/);
   const pool = analyseSample({ name: "pool", spec, control: loadTrace(entry.control), edited: loadTrace(truth.apoe_snp_hdr_pool.edited), sampleType: "pool" });
-  assert.match(headline("snp", pool), /^Intended edit \d+(\.\d+)?%, blocking-only/);
+  assert.match(headline("snp", pool), /^HDR score \d+(\.\d+)?%, blocking-only/);
   assert.equal(pool.genotype, null);
 });
 

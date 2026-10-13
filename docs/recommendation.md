@@ -64,3 +64,17 @@ a truncated product and proves nothing; two antibodies to different regions (one
 
 The ranking is a prediction from sequence, not a measurement. The weights have not been tested against protein data, and with few clones nothing can be tested. A clone with one read has an allele resolution that
 rests on that read.
+
+
+## KO score mode (no gene record)
+
+Without a gene record the number in the support column is the KO score, as ICE and DECODR report it: the share of alleles with a frameshift or an indel of 21 bp or more, taken from the share of the signal that is not wild type. The summary graph, the plate view, the clone selection figure and the recommendation file name it "KO score" (with a gene record they say "Knockout support"). It says the change is likely to disrupt the gene, not that the protein is gone; a Western blot shows that.
+Clones are ranked by it; ties (every clone with a large deletion between the cuts scores about 100) are broken by homozygous before compound heterozygous, then by a trace-quality warning, then by the confidence of the fit, then by the lower bound of the KO-score interval, then by name. Up to two clones with the same genotype count towards the panel, because independent clones with one deletion are a real replicate for a Western blot and a clean homozygous clone should come before a compound heterozygote with a noisy trace; the others are backups. With a gene record (functional prediction) one clone per genotype is taken, as before.
+The default panel is three clones for a knockout and six for a wanted edit; `--panel N` sets it.
+
+
+## HDR score mode (SNP, small tag)
+
+For a wanted edit the number is the HDR score, which is what ICE reports as its HDR or KI score: the share of alleles that carry the intended edit (`summary.intendedEditPct`), with its 95% interval. Blocking changes without the edit are counted separately ("blocking-only") and are not part of it, which is where the app and ICE differ most: ICE counts any allele that carries donor bases as HDR.
+The summary graph, the plate view, the clone selection figure, the report tables and the browser name it "HDR score". Clones are ranked by the lower bound of its interval, so a clone with a wide interval does not outrank a clean one on a point estimate.
+A design with two ssODNs (one per guide, each with its own silent change) is read with both donors together (`docs/clone-selection.md`), so a clone made with either one scores as the intended edit. ICE takes one donor per run: a clone made with the other donor scores about 50 there, and a clone that has one donor's silent change on each allele (both alleles carry the edit) scores 70 to 80 with either, because each donor explains only part of the signal.

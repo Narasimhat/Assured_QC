@@ -130,7 +130,7 @@ export function cloneAlignedFigure(view, { name = "clone", decision = "", headli
 /** One clone as the figures take it: its name, decision, a short note, and its view. */
 export function alignedItem(r) {
   const s = r.summary || {};
-  return { name: r.name, decision: r.decision ? r.decision.decision : "", note: s.intendedEditPct > 0 ? `intended edit ${s.intendedEditPct}%` : `edited ${s.editedPct}%`, view: r.view };
+  return { name: r.name, decision: r.decision ? r.decision.decision : "", note: r.workflow === "snp" || r.workflow === "tag_small" ? `HDR score ${s.intendedEditPct}%` : (s.intendedEditPct > 0 ? `intended edit ${s.intendedEditPct}%` : `edited ${s.editedPct}%`), view: r.view };
 }
 
 /** Items of one design, best clone first: [{ name, decision, note, view }] per group of samples that share a design and stretch. */

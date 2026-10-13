@@ -26,6 +26,7 @@ export function cloneSelectionFigure(results, { title = "", width = 980, note = 
   const rows = summaryOrder(results).map((i) => results[i]).filter((r) => r && r.ok && r.kind !== "junction" && r.recommendation && r.recommendation.priority !== "none");
   if (!rows.length) return "";
   const forward = rows.filter((r) => r.view && ["first", "confirmed"].includes(r.recommendation.priority)).sort((a, b) => a.recommendation.rank - b.recommendation.rank);
+  const hdrRun = rows.some((r) => r.workflow === "snp" || r.workflow === "tag_small");
   const n = rows.length; const nForward = rows.filter((r) => ["first", "confirmed"].includes(r.recommendation.priority)).length;
   let y = 0; let out = "";
   const heading = title || `${nForward} of ${n} clone${n === 1 ? "" : "s"} to carry forward first`;
@@ -40,7 +41,7 @@ export function cloneSelectionFigure(results, { title = "", width = 980, note = 
   const chipX = width - 268; const barX = width - 232; const barW = 150; const rh = 19; const hh = 18;
   out += `<text x="12" y="${y + 16}" font-size="13" font-weight="700" fill="${INK}">${forward.length ? "b" : "a"}\u00a0\u00a0\u00a0All clones</text>`; y += 30;
   markers.forEach((m, k) => { const cx = mx + k * cw + (cw - 4) / 2; out += `<text x="${cx}" y="${y + 6}" text-anchor="middle" font-size="8" font-weight="700" fill="${MARKER_COLOR(m.role)}">${esc(shorten(String(m.label || "change").replace(/ change$/, ""), 11))}</text><text x="${cx}" y="${y + 16}" text-anchor="middle" font-size="8" fill="${MARKER_COLOR(m.role)}">${esc(m.change)}</text>`; });
-  out += `<text x="12" y="${y + 16}" font-size="9" fill="${MUTED}">Clone</text><text x="${gx}" y="${y + 16}" font-size="9" fill="${MUTED}">Genotype read from the sequence</text><text x="${chipX + 9}" y="${y + 16}" text-anchor="middle" font-size="9" fill="${MUTED}">Call</text><text x="${barX}" y="${y + 16}" font-size="9" fill="${MUTED}">${rows.some((r) => r.workflow === "knockout" || r.workflow === "deletion") ? "Support" : "Intended edit, lower 95% bound"}</text>`;
+  out += `<text x="12" y="${y + 16}" font-size="9" fill="${MUTED}">Clone</text><text x="${gx}" y="${y + 16}" font-size="9" fill="${MUTED}">Genotype read from the sequence</text><text x="${chipX + 9}" y="${y + 16}" text-anchor="middle" font-size="9" fill="${MUTED}">Call</text><text x="${barX}" y="${y + 16}" font-size="9" fill="${MUTED}">${hdrRun ? "HDR score (95% interval)" : rows.some((r) => r.workflow === "knockout" || r.workflow === "deletion") ? (rows.some((r) => /^functional/.test((r.recommendation && r.recommendation.basis) || "")) ? "Support" : "KO score") : "Intended edit, lower 95% bound"}</text>`;
   y += 24;
   for (const [priority, label] of GROUPS) {
     const members = rows.filter((r) => r.recommendation.priority === priority); if (!members.length) continue;
@@ -64,14 +65,17 @@ export function cloneSelectionFigure(results, { title = "", width = 980, note = 
         out += `<text x="${gx}" y="${y + 13}" font-size="9" fill="${INK}"><title>${esc(genotype)}</title>${esc(shorten(genotype, Math.floor((chipX - gx - 8) / 4.9)))}</text>`;
       }
       if (chip) out += `<rect x="${chipX}" y="${y + 2}" width="18" height="${rh - 4}" rx="3" fill="${bg}" stroke="${line}" stroke-width="1.2"/><text x="${chipX + 9}" y="${y + 13}" text-anchor="middle" font-size="9.5" fill="${INK}">${chip}</text>`;
-      const score = collapse ? 0 : r.recommendation.score || 0;
-      out += `<rect x="${barX}" y="${y + 4}" width="${barW}" height="${rh - 8}" fill="#eef2f6"/><rect x="${barX}" y="${y + 4}" width="${fmt((barW * score) / 100)}" height="${rh - 8}" fill="${BLUE}" fill-opacity="${priority === "first" || priority === "confirmed" ? 1 : (TIER_OPACITY[r.recommendation.tier] ?? 0.6) * 0.8}"/><text x="${barX + barW + 6}" y="${y + 13}" font-size="9" fill="${INK}">${Math.round(score)}</text>`;
+      // an edit run shows the HDR score itself (the share of alleles with the intended edit) and its interval; the ranking uses the lower bound
+      const hdr = hdrRun && !collapse && r.summary && r.summary.intendedEditPct !== undefined; const iv = hdr && r.intervals && r.intervals.intendedEditPct ? r.intervals.intendedEditPct : null;
+      const score = collapse ? 0 : hdr ? r.summary.intendedEditPct : r.recommendation.score || 0; const shown = hdr ? `${Number(score).toFixed(1)}${iv ? ` (${iv[0]}\u2013${iv[1]})` : ""}` : String(Math.round(score));
+      out += `<rect x="${barX}" y="${y + 4}" width="${barW}" height="${rh - 8}" fill="#eef2f6"/><rect x="${barX}" y="${y + 4}" width="${fmt((barW * score) / 100)}" height="${rh - 8}" fill="${BLUE}" fill-opacity="${priority === "first" || priority === "confirmed" ? 1 : (TIER_OPACITY[r.recommendation.tier] ?? 0.6) * 0.8}"/><text x="${barX + barW + 6}" y="${y + 13}" font-size="${hdr ? 8 : 9}" fill="${INK}">${shown}</text>`;
       y += rh;
     });
   }
   y += 10;
   const foot = [
     "Table: share of the donor base at each designed change, from the peak heights (0 = control base, 100 = donor base; n/a where an indel shifts the read). Call: A accept, H hold, S sequence again, R reject.",
+    ...(hdrRun ? ["HDR score (ICE's KI score): the share of alleles that carry the intended edit, with its 95% interval; clones are ranked by the lower bound of the interval."] : []),
     ...(note ? [note] : []),
     "One read per clone (the first): the figure does not show allele phase, a large deletion on one allele or off-target edits.",
   ];
