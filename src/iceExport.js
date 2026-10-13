@@ -23,7 +23,7 @@ export function planIceExport(tasks, results = []) {
           control: t.controls[ri] || t.controls[0], edited, guides: guides.join(','), donor: donor?.sequence.toUpperCase() || '',
           donorName: donor?.name || (donor ? `Donor ${di + 1}` : 'No donor'), donorIndex: donor ? di + 1 : null,
           alternativeModel: unique.length > 1, nuclease,
-          assuredQc: { ok: results[index]?.ok ?? null, decision: results[index]?.decision ?? null, summary: results[index]?.summary ?? null },
+          assuredQc: { ok: results[index]?.ok ?? null, decision: results[index]?.decision ?? null, summary: results[index]?.summary ?? null, quality: results[index]?.quality ?? null },
           warnings: [...(t.planNotes || []), ...(results[index]?.warnings || [])] });
       });
     });

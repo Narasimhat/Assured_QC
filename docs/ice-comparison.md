@@ -13,3 +13,11 @@ Donors include both arms, are limited to 16–300 DNA bases and need at least 15
 The default is 96 rows per batch; 20 is available for smaller uploads. All batches stay within 700 rows/files and a conservative 200 MB uncompressed AB1 limit. The outer ZIP is a folder download, not the AB1 archive ICE expects.
 
 ICE donor HDR can differ from the intended amino-acid-change fraction, particularly where partial donor conversion carries the desired substitution. Compare fit quality, per-base signals and outcome definitions, not just headline percentages. Importing ICE result files for an automatic side-by-side comparison is a possible future extension.
+# Importing ICE results
+
+After ICE finishes, open **Compare with ICE → Bring ICE results back**. Select `sample_map.json` from the original export and ICE's results CSV/TSV (save an Excel results sheet as CSV first). Review the label and score columns and choose percent/fraction units explicitly. Click **Compare results**, then download the comparison CSV.
+
+Matching uses exact exported labels. Duplicate and unknown labels remain unresolved; missing scores stay blank. The saved map supplies the original Assured QC snapshot, so loading an old map does not silently compare against a newer analysis. Old maps without fit quality show a blank R². Donor alternatives are never added or averaged. Assured QC sample-level scores are repeated for context, not represented as donor-specific refits; no automatic agreement verdict or clone decision is assigned.
+
+The importer supports configurable CSV/TSV columns. Validation currently uses synthetic result fixtures; a real hosted ICE results export is still needed to verify its current column suggestions.
+

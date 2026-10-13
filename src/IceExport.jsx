@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { planIceExport, buildIceBundle } from './iceExport.js';
+import IceImport from './IceImport.jsx';
 
 export default function IceExport({ tasks, results, getBytes }) {
   const [busy, setBusy] = useState(false), [message, setMessage] = useState(''), [batchSize, setBatchSize] = useState(96);
@@ -22,5 +23,6 @@ export default function IceExport({ tasks, results, getBytes }) {
     <p className="muted">Extract the download, then upload the AB1 ZIP and Excel workbook from each batch folder to ICE. The package also saves sample labels, input hashes and Assured QC scores. Nothing is sent to ICE by this button.</p>
     {plan.excluded.length > 0 && <div role="note"><b>{plan.excluded.length} samples excluded</b><ul>{plan.excluded.map((e, i) => <li key={i}>{e.sample}: {e.reason}</li>)}</ul></div>}
     {message && <p role="status">{message}</p>}
+    <IceImport />
   </details>;
 }
