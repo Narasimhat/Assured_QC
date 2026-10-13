@@ -4,6 +4,7 @@ import { specFromControl } from "./manualSpec.js";
 import { validateDesignSpec } from "./designSpec.js";
 import { analyseJunctionRead, classifyBands } from "./junction.js";
 import { contributionsSvg, discordanceSvg } from "./charts.js";
+import { buildTraceView } from "./alignedView.js";
 import { baseEditMarkers, baseEditTable } from "./baseEdit.js";
 import { discoverCut } from "./cutDiscovery.js";
 import { buildCodingContext, describeContext, codingBlockToGenBank } from "./coding.js";
@@ -80,6 +81,12 @@ const round = (value, digits = 3) => (value === null || value === undefined || N
 const compactFunction = (fn) => ({ call: fn.call, score: { lofPct: fn.score.lofPct, uncertainPct: fn.score.uncertainPct, notLofPct: fn.score.notLofPct }, caveats: fn.caveats, confirm: fn.confirm, context: fn.context,
   rows: fn.rows.map((r) => ({ label: r.label, kind: r.kind, size: r.size, fraction: round(r.fraction, 4), class: r.class, lof: r.lof, summary: r.summary, details: r.details })) });
 
+// The chromatograms of the first read laid onto the control (src/alignedView.js), for the report figures; never allowed to stop an analysis.
+function traceViewOf(result, control, edited, options) {
+  if (options.traceView === false) return undefined;
+  try { return buildTraceView({ prepared: result.prepared, control, edited }) || undefined; } catch { return undefined; }
+}
+
 export function analyseSample({ name, spec, control, edited, extraReads = [], sampleType = "pool", options = {} }) {
   // Coding context (a gene record supplied with the design): turns the frameshift proxy into a functional knockout assessment.
   const codingResult = codingFor(options.codingInput, spec); const coding = codingResult && codingResult.ok ? codingResult.context : null;
@@ -101,6 +108,7 @@ export function analyseSample({ name, spec, control, edited, extraReads = [], sa
     markers: result.markerReadout.map((row) => ({ position: row.marker.pos, change: `${row.marker.ref}>${row.marker.alt}`, role: row.marker.role, label: row.marker.label || "", covered: row.covered, reason: row.reason || "", altEdited: round(row.altEdited), altControl: round(row.altControl), altNet: round(row.altNet) })),
     quality: { upstreamRms: round(result.quality.upstreamRms, 4), upstreamBackground: round(result.quality.upstreamBackground, 4), r2: round(decomposition.r2), noiseFraction: round(decomposition.noiseFraction), rawSum: round(decomposition.rawSum), windowLength: decomposition.windowLength, positionsUsed: decomposition.positionsUsed, candidates: decomposition.candidates, columns: decomposition.columns, discordanceBefore: round(result.quality.discordanceBefore), discordanceNearCut: round(result.quality.discordanceNearCut), discordanceAfter: round(result.quality.discordanceAfter), patches: result.prepared.patches.length },
     charts: { contributions: contributionsSvg(decomposition.contributions), discordance: discordanceSvg(result.prepared) },
+    view: traceViewOf(result, control, edited, options),
   };
 }
 

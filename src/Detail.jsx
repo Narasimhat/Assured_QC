@@ -1,5 +1,6 @@
 import { headline } from "./batch.js";
 import { cloneProteinFigure } from "./proteinFigure.js";
+import { cloneAlignedFigure } from "./alignedFigure.js";
 import { saveSvg, savePng } from "./saveFigure.js";
 
 const pct = (value) => (value === null || value === undefined ? "n/a" : `${(value * 100).toFixed(1)}%`);
@@ -43,6 +44,13 @@ export default function Detail({ workflow, result }) {
       {!result.functional && (workflow === "knockout" || workflow === "deletion") && (
         <p className="muted">KO score here is a frameshift proxy: the share of alleles whose net length change is not divisible by three, or that are at least 21 bp. It does not look at the coding sequence. Add the gene record (GenBank) to get a functional knockout assessment.</p>
       )}
+      {result.view && (() => { const svg = cloneAlignedFigure(result.view, { name: result.name, decision: result.decision ? result.decision.decision : "", headline: headline(workflow, result) }); return (
+        <div>
+          <h3>Chromatogram aligned with the wild-type control</h3>
+          <div className="chart" dangerouslySetInnerHTML={{ __html: svg }} />
+          <p><button type="button" className="link" onClick={() => saveSvg(`${result.name}_aligned.svg`, svg)}>Aligned chromatogram (SVG)</button><button type="button" className="link" onClick={() => savePng(`${result.name}_aligned_300dpi.png`, svg)}>Aligned chromatogram (PNG, 300 dpi)</button></p>
+        </div>
+      ); })()}
       {result.functional && (
         <div>
           <h3>Functional knockout assessment</h3>

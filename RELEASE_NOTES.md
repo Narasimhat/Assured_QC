@@ -1,5 +1,12 @@
 # Release notes
 
+## 0.5.0 (2026-10-13)
+
+- Clones aligned with the wild-type control (`src/alignedView.js`, `src/alignedFigure.js`, `docs/aligned-chromatograms.md`). The HTML report gets, for every clone, an annotated chromatogram aligned with the control (guides with PAM and cut, designed changes, base calls of both reads, every base that differs from the control, a second base where one is at least 20% of the signal, a block for the bases a clone lacks), and a new section "All clones aligned": the base calls of all clones as an alignment on the control (best clone first), and the chromatograms of all clones stacked on the same stretch (up to 48 clones). The same figures are in the browser (sample view and a section under the summary graph, SVG and PNG downloads) and from the command line (`clones_alignment.svg`, `clones_aligned.svg`, and with `--clone-figures` one SVG per clone in `chromatograms/`).
+- The view is kept on each analysed sample as `view` (plain data, about 9 KB), built by `analyseSample` and left out of `results.json`; `options.traceView = false` switches it off. It never changes an estimate, interval, call or decision.
+- Report size: about 65 KB per clone; above 48 samples the per-sample figure is kept for samples that were not rejected, and the stacked chromatograms are left out.
+- `QC_VERSION` and `package.json` read 0.5.0. Built on 0.4.2 (pull request 6). Of the 41 files hashed in `bench/ENGINE_FREEZE_0.4.2.json`, 39 are byte-identical; `batch.js` and `report.js` changed, and `alignedView.js` and `alignedFigure.js` are added (43 hashed in `bench/ENGINE_FREEZE_0.5.0.json`). On a real 24-clone SNP plate every output of 0.4.2 except the report is byte-identical (the run time of each sample aside).
+
 ## 0.4.2 (2026-10-13)
 
 - Clone recommendation for a wanted edit (SNP, small tag, knock-in; `src/recommend.js`, `docs/recommendation.md`): clones with the same genotype are now replicates and each counts for the panel, ranked by the lower bound of the intended-edit interval (a plate of six clean homozygous clones names up to `--panel N` of them). Before, the best clone of each genotype formed the panel and the others were listed as backups, which suits knockouts (one predicted outcome) but not an edit.

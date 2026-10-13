@@ -39,3 +39,4 @@ ul { margin: 4px 0 8px 18px; padding: 0; }
 .chip.d-resequence { background: #d1e9ff; color: #194185; border-color: #2e90fa; }
 .chip.d-reject { background: #fee4e2; color: #912018; border-color: #f04438; }
 details > summary { cursor: pointer; padding: 4px 0; }
+details.aligned{margin:10px 0}details.aligned summary{cursor:pointer;margin:6px 0}

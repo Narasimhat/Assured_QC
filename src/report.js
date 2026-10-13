@@ -2,8 +2,9 @@
 import { WORKFLOWS, headline } from "./batch.js";
 import { cloneProteinFigure } from "./proteinFigure.js";
 import { runSummaryFigure } from "./summaryFigure.js";
+import { cloneAlignedFigure, alignedGroups, clonesAlignedFigure, clonesAlignmentFigure } from "./alignedFigure.js";
 
-export const QC_VERSION = "0.4.2";
+export const QC_VERSION = "0.5.0";
 const esc = (value) => String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const pct = (value) => (value === null || value === undefined ? "n/a" : `${(value * 100).toFixed(1)}%`);
 
@@ -39,7 +40,7 @@ function contributionRows(r) {
   return r.contributions.map((c) => `<tr><td>${esc(c.label)}${c.indistinguishable ? ` <span class="muted">(+${c.indistinguishable} indistinguishable on this trace)</span>` : ""}</td><td>${esc(c.kind.replace(/_/g, " "))}</td><td>${pct(c.fraction)}</td></tr>`).join("");
 }
 
-function sampleSection(workflow, r) {
+function sampleSection(workflow, r, { chromatogram = true } = {}) {
   const head = `<div class="sample"><h3>${esc(r.name)}: <span class="${statusClass(r)}">${esc(headline(workflow, r))}</span></h3>`;
   if (!r.ok) return `${head}<p>${esc(r.error)}</p></div>`;
   if (r.kind === "junction") {
@@ -62,7 +63,15 @@ function sampleSection(workflow, r) {
     return `<h3>Functional knockout assessment</h3><p><b>${esc(f.call.text)}</b> Functional knockout score ${s.functionalKoPct}%${r.intervals && r.intervals.functionalKoPct ? ` (95% interval ${intervalText(r.intervals.functionalKoPct)})` : ""}, uncertain ${s.functionalUncertainPct}%. Coding sequence of ${esc(f.context.transcript || "")}: ${f.context.proteinLength} residues in ${f.context.codingExons} coding exon${f.context.codingExons === 1 ? "" : "s"}.</p><table><tr><th>Allele</th><th>Share</th><th>Predicted effect on the protein</th><th>Loss of function</th></tr>${rows}</table>${(() => { const fig = cloneProteinFigure(r, { title: "Predicted protein products" }); return fig ? `<div style="overflow-x:auto">${fig}</div>` : ""; })()}<p class="muted">Predicted from sequence only. Nonsense-mediated decay follows the exon-junction rules (stop in the last coding exon, within 55 nt of the last junction, within 150 nt of the start codon, or in a coding exon over 407 nt escapes); these rules fail for roughly a third of premature stops. A knockout is confirmed by loss of protein.</p>${f.caveats.length ? `<ul>${f.caveats.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>` : ""}${f.confirm.length ? `<p><b>To confirm</b></p><ul>${f.confirm.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>` : ""}`;
   })() : "";
   const q = r.quality;
-  return `${head}${decision}${numbers}${intervals}${reads}${baseEdits}${genotype}${functional}<table><tr><th>Allele</th><th>Type</th><th>Share</th></tr>${contributionRows(r)}</table>${r.charts.contributions}${r.charts.discordance}${markers}${provenance}<p class="muted">Fit R&sup2; ${q.r2 === null ? "n/a" : q.r2} (relative to a wild-type-only fit), background signal ${pct(q.noiseFraction)}, ${q.positionsUsed} positions in the window, ${q.columns} distinguishable candidate alleles; mean discordance ${q.discordanceBefore} before the cut${q.discordanceNearCut !== undefined && q.discordanceNearCut !== null ? ` (${q.discordanceNearCut} in the stretch next to it)` : ""}, ${q.discordanceAfter} after it.</p>${r.warnings.length ? `<ul>${r.warnings.map((w) => `<li class="warn">${esc(w)}</li>`).join("")}</ul>` : ""}</div>`;
+  const aligned = r.view && chromatogram ? `<h3>Chromatogram aligned with the wild-type control</h3><div style="overflow-x:auto">${cloneAlignedFigure(r.view, { name: r.name, decision: r.decision ? r.decision.decision : "", headline: headline(workflow, r) })}</div>` : "";
+  return `${head}${decision}${numbers}${intervals}${reads}${baseEdits}${genotype}${functional}<table><tr><th>Allele</th><th>Type</th><th>Share</th></tr>${contributionRows(r)}</table>${aligned}${r.charts.contributions}${r.charts.discordance}${markers}${provenance}<p class="muted">Fit R&sup2; ${q.r2 === null ? "n/a" : q.r2} (relative to a wild-type-only fit), background signal ${pct(q.noiseFraction)}, ${q.positionsUsed} positions in the window, ${q.columns} distinguishable candidate alleles; mean discordance ${q.discordanceBefore} before the cut${q.discordanceNearCut !== undefined && q.discordanceNearCut !== null ? ` (${q.discordanceNearCut} in the stretch next to it)` : ""}, ${q.discordanceAfter} after it.</p>${r.warnings.length ? `<ul>${r.warnings.map((w) => `<li class="warn">${esc(w)}</li>`).join("")}</ul>` : ""}</div>`;
+}
+
+/** The clones of each design on one stretch of the control: the base calls as an alignment, and the chromatograms stacked (up to 48 clones). */
+export function alignedSection(results) {
+  const groups = alignedGroups(results); if (!groups.length) return "";
+  const intro = "<p class=\"muted\">Best clone first. Every clone is laid onto the same stretch of the wild-type control read, base by base. Guides (grey bar, PAM darker), cuts and designed changes are marked. A base that differs from the control is highlighted; a dash is a base the clone lacks.</p>";
+  return `<h2>All clones aligned</h2>${intro}${groups.map((items, g) => `${groups.length > 1 ? `<h3>Design group ${g + 1} (${items.length} samples)</h3>` : ""}<h3>Base calls</h3><div style="overflow-x:auto">${clonesAlignmentFigure(items)}</div>${items.length <= 48 ? `<h3>Chromatograms</h3><div style="overflow-x:auto">${clonesAlignedFigure(items)}</div>` : "<p class=\"muted\">More than 48 clones: the chromatograms are in the sample sections below.</p>"}`).join("")}`;
 }
 
 export function buildQcReportHtml({ title = "Sanger QC report", workflow, design = "", results, generatedAt = new Date(), notes = [] }) {
@@ -74,7 +83,8 @@ export function buildQcReportHtml({ title = "Sanger QC report", workflow, design
 <div class="note"><b>Review required.</b> These are computed estimates from Sanger traces. Check the traces and the points flagged below before accepting a clone or releasing a line.</div>
 ${notes.map((n) => `<p>${esc(n)}</p>`).join("")}
 <h2>Summary</h2>${(() => { const fig = runSummaryFigure(results, { title: "Run summary" }); return fig ? `<div style="overflow-x:auto">${fig}</div>` : ""; })()}<table><tr><th>Sample</th><th>Decision</th><th>Result</th><th>Notes</th></tr>${rows}</table>
-<h2>Samples</h2>${results.map((r) => sampleSection(workflow, r)).join("")}
+${alignedSection(results)}
+<h2>Samples</h2>${results.map((r) => sampleSection(workflow, r, { chromatogram: results.length <= 48 || !r.decision || r.decision.decision !== "reject" })).join("")}
 <h2>Method and limits</h2><ul>${METHOD.map((m) => `<li>${esc(m)}</li>`).join("")}</ul>
 </body></html>`;
 }
