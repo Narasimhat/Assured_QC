@@ -59,7 +59,7 @@ export default function QuickStart() {
       const design = incoming.find((f) => kinds.designs.includes(f.name)); if (design) { setDesignName(design.name); setDesignText(""); setDesignIndex(0); setDesignText(await design.text()); }
       const gene = incoming.find((f) => kinds.genes.includes(f.name)); if (gene) { setGeneText(await gene.text()); setGeneName(gene.name); }
       if (duplicates.length) setError(`Already loaded: ${duplicates.join(", ")}. Kept the existing traces. For different reads with the same filename, rename them before adding; to replace a trace, remove it first.`);
-      if (kinds.designs.length > 1) setError("More than one design file was selected. Loaded the first; use the design picker below to choose a different report.");
+      if (kinds.designs.length > 1) setError("More than one design file was selected. Loaded the first; use Replace design to choose a different report.");
     } catch (e) { setImportStatus(""); setError(`Could not read the selected file. Try copying it from the network drive to a local folder and selecting it again. ${e.message || ""}`); }
   };
 
@@ -110,28 +110,21 @@ export default function QuickStart() {
 
   return (
     <div className="card quick">
-      <h2>Quick start: drop your files</h2>
+      <h2>Quick start: add files or a folder</h2>
       <div className={`drop${dragging ? " over" : ""}`} onDragOver={(e) => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={(e) => { e.preventDefault(); setDragging(false); addFiles(e.dataTransfer.files); }}>
-        <p><b>Drop the .ab1 files here</b> (controls and samples together, forward and reverse reads), plus, if you have them, the design (report .html or file .json) a sample sheet (.csv) and the gene record (GenBank, .gb).</p>
+        <p><b>Drop AB1 files, sequencing ZIPs and your design report here</b> (controls and samples together, forward and reverse reads), plus, if you have them, the design (report .html or file .json) a sample sheet (.csv) and the gene record (GenBank, .gb).</p>
         <input ref={filePicker} hidden style={{ display: "none" }} type="file" multiple accept=".zip,.ab1,.abi,.csv,.tsv,.json,.html,.htm,.gb,.gbk,.gbff,.genbank,text/html,application/json" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} aria-label="Choose files" />
         <p><button type="button" disabled={running} onClick={() => filePicker.current.click()}>Add files (AB1, ZIP, HTML, JSON, CSV or GenBank)</button></p>
         <input ref={folderPicker} hidden style={{ display: "none" }} type="file" multiple webkitdirectory="" directory="" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} aria-label="Choose a folder" />
-        <p><button type="button" disabled={running} onClick={() => folderPicker.current.click()}>Add a folder</button> <span className="muted">Imports supported files inside a folder. To select one HTML report, use Add files or Choose design report.</span></p>
+        <p><button type="button" disabled={running} onClick={() => folderPicker.current.click()}>Add a folder</button> <span className="muted">Imports supported files inside a folder. To select an HTML report or sequencing ZIP, use Add files.</span></p>
         <p>Select files from one folder, then click Add files again for another folder. Earlier traces and your design stay loaded. You can also add folders one at a time.</p>
         <p className="muted">Nothing is uploaded: the files are read and analysed in this browser.</p>
       </div>
       {importStatus && <p role="status" className="note">{importStatus}</p>}
-      {traceNames.length > 0 && <details open>
-        <summary>Loaded traces ({traceNames.length})</summary>
-        <ul>{traceNames.map((name) => <li key={name}><span>{name}</span> <button type="button" disabled={running} aria-label={`Remove trace ${name}`} onClick={() => {
-          files.current.delete(name); buffers.current.delete(name); setTraceNames((previous) => previous.filter((n) => n !== name)); setPairsEdit({}); setOutcome(null); setError("");
-        }}>Remove</button></li>)}</ul>
-      </details>}
-      <p className="field">Add or replace a design report (HTML or JSON)</p>
       <input ref={designPicker} hidden style={{ display: "none" }} id="q-design" aria-label="Design report file" type="file" accept=".html,.htm,.json,text/html,application/json" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
-      <p><button type="button" disabled={running} onClick={() => designPicker.current.click()}>Choose design report (HTML or JSON)</button> <span className="muted">{designName || "No design selected."}</span></p>
+      {!designName && <p className="muted">Add a design report (HTML or JSON) using Add files above, or enter guides manually under “Guides, donor, nuclease, goal”.</p>}
       {designName && <div role="status">
-        <p>Design: <b>{designName}</b> <button type="button" disabled={running} onClick={() => { setDesignName(""); setDesignText(""); setDesignIndex(0); setOutcome(null); setError(""); }}>Remove design</button></p>
+        <p><b>{design.error ? "Design needs attention:" : "Design loaded:"}</b> {designName} <button type="button" disabled={running} onClick={() => designPicker.current.click()}>Replace design</button> <button type="button" disabled={running} onClick={() => { setDesignName(""); setDesignText(""); setDesignIndex(0); setOutcome(null); setError(""); }}>Remove design</button></p>
         {design.error ? <p className="error">{design.error} Replace or remove this file to continue.</p> : design.kind === "report" ? <>
           {design.designs.length > 1 && <><label htmlFor="q-design-choice">Design in this report</label><select id="q-design-choice" disabled={running} value={designIndex} onChange={(e) => { setDesignIndex(Number(e.target.value)); setOutcome(null); }}>{design.designs.map((d, i) => <option key={i} value={i}>{d.title}</option>)}</select></>}
           <p>Imported {design.label}: {design.guides.length} guides, {design.donors.length} donors.{design.donors.filter((d) => d.recommended).length > 1 ? ` The ${design.donors.filter((d) => d.recommended).length} recommended donors are used together.` : ""}</p>
@@ -139,6 +132,12 @@ export default function QuickStart() {
           {!traceNames.length && <p className="muted">Design ready. Add the control and sample AB1 files above to start analysis.</p>}
         </> : design.kind === "spec" ? <p>Imported {design.label}.</p> : <p className="note">The design is empty or could not be read. Replace or remove it to continue.</p>}
       </div>}
+      {traceNames.length > 0 && <details open>
+        <summary>Loaded traces ({traceNames.length})</summary>
+        <ul>{traceNames.map((name) => <li key={name}><span>{name}</span> <button type="button" disabled={running} aria-label={`Remove trace ${name}`} onClick={() => {
+          files.current.delete(name); buffers.current.delete(name); setTraceNames((previous) => previous.filter((n) => n !== name)); setPairsEdit({}); setOutcome(null); setError("");
+        }}>Remove</button></li>)}</ul>
+      </details>}
       {traceNames.length > 0 && (
         <>
           <p>{traceNames.length} trace{traceNames.length === 1 ? "" : "s"}; {pairs.length} sample{pairs.length === 1 ? "" : "s"} paired by {built.source === "sheet" ? "the sample sheet" : "file names"}. Guides from {guideSource}.</p>
