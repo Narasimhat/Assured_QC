@@ -71,7 +71,7 @@ export function supportOf(result, options = {}) {
   }
   if (knock) {
     const s = result.summary || {}; const score = Math.max(0, Math.round(((s.koScorePct ?? 0) * (100 - (s.wtPct ?? 0))) / 100));
-    return { score, basis: "frameshift proxy (no gene record: consequence not modelled)", tier: score >= 90 ? "likely" : score >= 50 ? "possible" : "unsupported", alleles: [], mechanism: { splice: false, nmd: false } };
+    return { score, basis: "KO score (frameshift or an indel of 21 bp or more, as in ICE; no gene record, so the effect on the protein is not modelled)", tier: score >= 90 ? "likely" : score >= 50 ? "possible" : "unsupported", alleles: [], mechanism: { splice: false, nmd: false } };
   }
   const iv = result.intervals || {}; const s = result.summary || {}; const score = Math.round(iv.intendedEditPct ? iv.intendedEditPct[0] : (s.intendedEditPct ?? 0));
   return { score, basis: "intended edit, lower bound of the interval", tier: score >= 85 ? "firm" : score >= 50 ? "likely" : score >= 20 ? "possible" : "unsupported", alleles: [], mechanism: { splice: false, nmd: false } };
@@ -88,7 +88,9 @@ const CONF = { high: 0, moderate: 1, low: 2 };
  *   priority: first | reserve | duplicate | caution (protein measured: truncated or reduced) | not_recommended (the sequence does not support the wanted edit) | resequence | discard | confirmed | none (not a clone)
  */
 export function recommendClones(results, options = {}) {
-  const opt = { ...RECOMMEND_DEFAULTS, ...options, risk: { ...RISK_DEFAULTS, ...(options.risk || {}) } };
+  // an option that is undefined or null (for example --panel not given) must not replace a default
+  const given = Object.fromEntries(Object.entries(options).filter(([, v]) => v !== undefined && v !== null));
+  const opt = { ...RECOMMEND_DEFAULTS, ...given, risk: { ...RISK_DEFAULTS, ...(given.risk || {}) } };
   const info = results.map((r) => {
     if (!r || !r.ok || r.kind === "junction" || r.sampleType === "pool" || !r.decision) return null;
     const support = supportOf(r, opt); const confirmation = r.confirmation && r.confirmation.protein;
@@ -103,7 +105,11 @@ export function recommendClones(results, options = {}) {
     const knock = r.workflow === "knockout" || r.workflow === "deletion"; const unsupported = !confirmed && !against && support.tier === "unsupported";
     return { r, support, label, flags, confirmed, against, knock, unsupported, gkey: knock ? label : `sample:${r.name}`, quality: flags.some((f) => /trace quality/.test(f)) ? 1 : 0, nAlleles: alleles.length || 9 };
   });
-  const panelSize = options.panel !== undefined && options.panel !== null ? options.panel : (info.some((x) => x && !x.knock) ? opt.panelEdit : opt.panel);
+  const panelSize = given.panel !== undefined ? given.panel : (info.some((x) => x && !x.knock) ? opt.panelEdit : opt.panel);
+  // Without a gene record a knockout is ranked by its KO score (as ICE and DECODR report it: frameshift or an indel of 21 bp or more). Clones with the same deletion then tie on the score, so up to two of
+  // them count towards the panel (independent clones with one deletion are a real replicate for a Western blot), ahead of a compound heterozygote; with a functional prediction one clone per genotype is enough.
+  const koScoreRun = info.some((x) => x && x.knock && /^KO score/.test(x.support.basis)); const perGenotype = koScoreRun ? 2 : 1;
+  const lowerBound = (x) => (x.r.intervals && x.r.intervals.koScorePct ? x.r.intervals.koScorePct[0] : 0);
   const out = results.map(() => ({ rank: null, score: null, basis: "", tier: "", tierText: "", priority: "none", action: "", why: [], testWith: [], flags: [], group: "", groupOf: 0, duplicateOf: null }));
   const eligible = []; 
   info.forEach((x, i) => {
@@ -120,15 +126,17 @@ export function recommendClones(results, options = {}) {
     eligible.push(i);
   });
   eligible.sort((a, b) => { const x = info[a]; const y = info[b];
-    return (y.confirmed - x.confirmed) || (x.against - y.against) || (out[b].score - out[a].score) || (x.nAlleles - y.nAlleles) || (x.quality - y.quality) || ((CONF[x.r.confidence?.tier] ?? 1) - (CONF[y.r.confidence?.tier] ?? 1)) || natural(x.r.name, y.r.name); });
+    return (y.confirmed - x.confirmed) || (x.against - y.against) || (out[b].score - out[a].score) || (x.nAlleles - y.nAlleles) || (x.quality - y.quality) || ((CONF[x.r.confidence?.tier] ?? 1) - (CONF[y.r.confidence?.tier] ?? 1)) || (koScoreRun ? lowerBound(y) - lowerBound(x) : 0) || natural(x.r.name, y.r.name); });
   const seen = new Map(); let reps = 0;
   eligible.forEach((i, k) => {
     const x = info[i]; const o = out[i]; o.rank = k + 1;
-    if (x.confirmed) { o.priority = "confirmed"; o.action = "Protein absent: use this clone. Consider a second antibody to another region, and out-out PCR for a large deletion on the other allele."; if (!seen.has(x.gkey)) seen.set(x.gkey, i); return; }
+    if (x.confirmed) { o.priority = "confirmed"; o.action = "Protein absent: use this clone. Consider a second antibody to another region, and out-out PCR for a large deletion on the other allele."; if (!seen.has(x.gkey)) seen.set(x.gkey, { i, n: 1 }); return; }
     if (x.against) { o.priority = "caution"; o.action = `Protein measured (${x.r.confirmation.protein}): a protein is still made. Test whether it is functional, or choose another clone.`; return; }
-    if (seen.has(x.gkey)) { const rep = seen.get(x.gkey); o.priority = "duplicate"; o.duplicateOf = info[rep].r.name; o.action = `Same genotype as ${info[rep].r.name}: keep as a backup, test only if that clone fails.`; return; }
-    seen.set(x.gkey, i); reps += 1; const accepted = x.r.decision.decision === "accept";
-    if (reps <= panelSize) { o.priority = "first"; o.action = x.knock ? (accepted ? "Carry forward; confirm the protein as routine." : "Carry forward and test first (best clone of its genotype).") : (accepted ? "Carry forward: one of the best clones carrying the wanted edit." : "Carry forward after checking the flagged points (see the reasons): the genotype is usable but not the cleanest."); }
+    const prior = seen.get(x.gkey); const cap = x.knock ? perGenotype : 1;
+    if (prior && prior.n >= cap) { o.priority = "duplicate"; o.duplicateOf = info[prior.i].r.name; o.action = `Same genotype as ${info[prior.i].r.name}: keep as a backup, test only if ${cap > 1 ? "one of those clones" : "that clone"} fails.`; return; }
+    if (prior) prior.n += 1; else seen.set(x.gkey, { i, n: 1 });
+    reps += 1; const accepted = x.r.decision.decision === "accept";
+    if (reps <= panelSize) { o.priority = "first"; o.action = x.knock ? (prior ? `Carry forward: a second clone with the same deletion as ${info[prior.i].r.name}, an independent check.` : (accepted ? (koScoreRun ? "Carry forward to the Western blot." : "Carry forward; confirm the protein as routine.") : "Carry forward and test first (best clone of its genotype).")) : (accepted ? "Carry forward: one of the best clones carrying the wanted edit." : "Carry forward after checking the flagged points (see the reasons): the genotype is usable but not the cleanest."); }
     else { o.priority = "reserve"; o.action = x.knock ? "Reserve: test if the first-choice clones fail." : "Reserve: the next best clone carrying the wanted edit; use it if a first-choice clone fails."; }
   });
   const sizeOf = new Map(); info.forEach((x) => { if (x) sizeOf.set(x.gkey, (sizeOf.get(x.gkey) || 0) + 1); }); info.forEach((x, i) => { if (x) out[i].groupOf = sizeOf.get(x.gkey); });

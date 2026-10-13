@@ -28,6 +28,8 @@ export function runSummaryFigure(results, { title = "", width = 980, generatedLa
   const rh = n <= 30 ? 28 : n <= 80 ? 20 : 15; const labels = rh >= 20; const fs = rh >= 20 ? 11 : 9;
   const NAME = { x: 14, w: 196 }; const CHIP = 222; const COMP = { x: 280, w: 252 }; const EDIT = { x: 560, w: 156 }; const SUP = { x: 744, w: 80 }; const PLANX = 856;
   const koRun = results.some((r) => r.workflow === "knockout" || r.workflow === "deletion");
+  // without a gene record the number in the support column is the KO score (as ICE and DECODR report it); with one it is the functional prediction
+  const koScoreRun = koRun && !results.some((r) => r.recommendation && /^functional/.test(r.recommendation.basis || ""));
   const counts = { accept: 0, hold: 0, "re-sequence": 0, reject: 0 }; results.forEach((r) => { if (r.decision && counts[r.decision.decision] !== undefined) counts[r.decision.decision] += 1; });
   const parts = []; let y = 6;
   parts.push(`<text x="14" y="${y + 13}" font-size="13" fill="${INK}">${esc(title || `Run summary: ${n} sample${n === 1 ? "" : "s"}`)}</text>`); y += 20;
@@ -37,7 +39,7 @@ export function runSummaryFigure(results, { title = "", width = 980, generatedLa
   parts.push(`<text x="${NAME.x}" y="${hy}" font-size="10" fill="${MUTED}">Sample (best first)</text><text x="${CHIP - 4}" y="${hy}" font-size="10" fill="${MUTED}">Decision</text>`);
   parts.push(`<text x="${COMP.x}" y="${hy - 12}" font-size="10" fill="${MUTED}">What the clone is made of (share of the signal)</text>`);
   parts.push(`<text x="${EDIT.x}" y="${hy - 12}" font-size="10" fill="${MUTED}">${koRun ? "Edited share" : "Intended edit"}, 95% interval</text>`);
-  parts.push(`<text x="${SUP.x}" y="${hy - 12}" font-size="10" fill="${MUTED}">${koRun ? "Knockout support" : "Support"}</text><text x="${PLANX}" y="${hy}" font-size="10" fill="${MUTED}">Plan</text>`);
+  parts.push(`<text x="${SUP.x}" y="${hy - 12}" font-size="10" fill="${MUTED}">${koRun ? (koScoreRun ? "KO score" : "Knockout support") : "Support"}</text><text x="${PLANX}" y="${hy}" font-size="10" fill="${MUTED}">Plan</text>`);
   [0, 50, 100].forEach((v) => { parts.push(`<text x="${COMP.x + (COMP.w * v) / 100}" y="${hy}" font-size="9" text-anchor="${v === 0 ? "start" : v === 100 ? "end" : "middle"}" fill="${MUTED}">${v}%</text><text x="${EDIT.x + (EDIT.w * v) / 100}" y="${hy}" font-size="9" text-anchor="${v === 0 ? "start" : v === 100 ? "end" : "middle"}" fill="${MUTED}">${v}</text>`); });
   parts.push(`<text x="${SUP.x}" y="${hy}" font-size="9" fill="${MUTED}">0</text><text x="${SUP.x + SUP.w}" y="${hy}" font-size="9" text-anchor="end" fill="${MUTED}">100</text>`);
   y += 18; const top = y; const kindsSeen = new Set(); let hasUnexplained = false;
@@ -85,7 +87,7 @@ export function runSummaryFigure(results, { title = "", width = 980, generatedLa
   y = ky + 22;
   const foot = [
     `Numbers inside the bars are the length change in bp of each allele (WT = wild type). Two alleles of one kind alternate in shade. The dot is the estimate and the line its 95% interval. ! = low trace quality or low confidence in the result.`,
-    koRun ? `Knockout support ranks the clones by how strongly the sequence predicts that no functional protein is left: 100 x (1 - mean allele risk), 85 at best from sequence, 100 only with a protein result. The weights are provisional (docs/recommendation.md).` : `Support is the lower bound of the intended-edit interval.`,
+    koScoreRun ? `KO score, as in ICE: the share of alleles with a frameshift or an indel of 21 bp or more (the share that is not wild type). It says the change is likely to disrupt the gene, not that the protein is gone; a Western blot shows that. Clones are ranked by it (docs/recommendation.md).` : koRun ? `Knockout support ranks the clones by how strongly the sequence predicts that no functional protein is left: 100 x (1 - mean allele risk), 85 at best from sequence, 100 only with a protein result. The weights are provisional (docs/recommendation.md).` : `Support is the lower bound of the intended-edit interval.`,
   ];
   const wrap = (t, max = 175) => { const words = t.split(" "); const lines = []; let line = ""; words.forEach((w) => { if ((line + " " + w).trim().length > max) { lines.push(line); line = w; } else line = (line + " " + w).trim(); }); if (line) lines.push(line); return lines; };
   foot.forEach((t) => wrap(t).forEach((line) => { parts.push(`<text x="14" y="${y + 10}" font-size="10" fill="${MUTED}">${esc(line)}</text>`); y += 13; }));

@@ -20,7 +20,7 @@ test("the summary graph has one row per sample, best clone first, with decision,
   assert.match(svg, /^<svg /); assert.ok(svg.trimEnd().endsWith("</svg>")); assert.match(svg, /Run summary: plate 1/); assert.match(svg, /Accept 1   \u00b7   Hold 1   \u00b7   Sequence again 1   \u00b7   Reject 1/);
   const at = (s) => svg.indexOf(`>${s}</text>`); assert.ok(at("a_clone") > 0 && at("a_clone") < at("b_clone") && at("b_clone") < at("c_wt") && at("c_wt") < at("d_bad"), "ranked clones first, then the rest in input order");
   assert.match(svg, />\u221279</); assert.match(svg, />\u221277</); assert.match(svg, />WT</); assert.match(svg, /#1 carry forward/); assert.match(svg, /#2 carry forward/);
-  assert.match(svg, /Deletion between the cuts/); assert.match(svg, /Wild type/); assert.match(svg, /no usable read/); assert.match(svg, /Knockout support/);
+  assert.match(svg, /Deletion between the cuts/); assert.match(svg, /Wild type/); assert.match(svg, /no usable read/); assert.match(svg, /KO score/); assert.ok(!/Knockout support/.test(svg), "no gene record: the column is the KO score");
   assert.equal((svg.match(/<svg /g) || []).length, 1); assert.ok(!/<script|javascript:/i.test(svg));
   assert.match(svg, /<text[^>]*>!<\/text>/, "the low-quality clone is marked");
 });
