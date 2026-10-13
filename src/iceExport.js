@@ -14,9 +14,11 @@ export function planIceExport(tasks, results = []) {
     const donors = t.spec?.donors || [];
     if (['snp', 'tag_small'].includes(t.workflow) && !donors.length) return reject('The analysed design has no donor sequence.');
     if (donors.some(d => !/^[ACGT]{16,300}$/i.test(d.sequence || ''))) return reject('Each ICE donor must contain 16–300 DNA bases, including homology arms.');
-    const unique = [...new Map(donors.map(d => [d.sequence.toUpperCase(), d])).values()];
+    // Preserve design order: donor i belongs to guide i, even for identical donors.
+    if (donors.length && guides.length > 1 && donors.length !== guides.length) return reject('Guide/donor counts differ. Export each design separately with its matched guide and donor.');
+    const unique = guides.length === 1 ? [...new Map(donors.map(d => [d.sequence.toUpperCase(), d])).values()] : donors;
     (unique.length ? unique : [null]).forEach((donor, di) => {
-      const guideModels = donor ? guides.map((guide, gi) => ({ guide, gi })) : [{ guide: guides.join(','), gi: null }];
+      const guideModels = donor ? [{ guide: guides[guides.length === 1 ? 0 : di], gi: guides.length === 1 ? 0 : di }] : [{ guide: guides.join(','), gi: null }];
       guideModels.forEach(({ guide, gi }) => {
       t.edited.forEach((edited, ri) => {
         const sampleLabel = String(t.name).replace(/[^a-zA-Z0-9_-]+/g, '_').slice(0, 60) || 'sample';
@@ -61,7 +63,7 @@ export async function buildIceBundle({ tasks, results, getBytes, rowsPerBatch = 
   }
   const batches = []; let current = [], used = new Set(), size = 0;
   // Keep each single-guide/donor model in its own upload batch.
-  plan.rows.sort((a, b) => `${a.guides}|${a.donor}`.localeCompare(`${b.guides}|${b.donor}`));
+  plan.rows.sort((a, b) => (a.donorIndex || 0) - (b.donorIndex || 0) || `${a.guides}|${a.donor}`.localeCompare(`${b.guides}|${b.donor}`));
   for (const row of plan.rows) {
     const names = [...new Set([row.control, row.edited])];
     const added = names.filter(n => !used.has(n)).reduce((s, n) => s + files.get(n).bytes.length + 200, 0);
@@ -72,7 +74,7 @@ export async function buildIceBundle({ tasks, results, getBytes, rowsPerBatch = 
   }
   if (current.length) batches.push(current);
   for (const [i, rows] of batches.entries()) {
-    const folder = `batch_${String(i + 1).padStart(3, '0')}`; const traces = new JSZip();
+    const folder = `batch_${String(i + 1).padStart(3, '0')}${rows[0].donor ? `_gRNA${rows[0].guideIndex}_ssODN${rows[0].donorIndex}` : ''}`; const traces = new JSZip();
     for (const name of new Set(rows.flatMap(r => [r.control, r.edited]))) traces.file(files.get(name).exportName, files.get(name).bytes);
     bundle.file(`${folder}/ab1_files.zip`, await traces.generateAsync({ type: 'uint8array', compression: 'STORE' }));
     bundle.file(`${folder}/ice_definitions.xlsx`, await workbook(JSZip, rows.map(r => [r.label, files.get(r.control).exportName, files.get(r.edited).exportName, r.guides, r.donor])));
@@ -83,6 +85,6 @@ export async function buildIceBundle({ tasks, results, getBytes, rowsPerBatch = 
     interpretation: 'Donor rows are alternative fits of the same trace, not replicates or a joint two-donor model. Do not add or average their HDR percentages.' };
   bundle.file('sample_map.json', JSON.stringify(manifest, null, 2));
   bundle.file('sample_map.csv', csv([['ICE label', 'Assured QC sample', 'Read', 'Donor', 'Batch', 'Original control', 'Original edited', 'Alternative model'], ...plan.rows.map(r => [r.label, r.sample, r.read, r.donorName, r.batch, r.control, r.edited, r.alternativeModel])]));
-  bundle.file('START_HERE.txt', `ICE comparison package\n\n1. Extract this outer ZIP into a folder on your computer.\n2. Open https://ice.editco.bio/#/ and choose Batch Upload.\n3. For each batch folder, upload ab1_files.zip on the left and ice_definitions.xlsx on the right. Do not upload this outer package.\n4. Save ICE results beside that batch. Use sample_map.csv to match labels back to your samples.\n\n${plan.samples} samples, ${plan.rows.length} ICE rows, ${batches.length} batches.\nDonor models use exactly one guide and one donor per row. Every guide/donor combination is exported in separate batches because guide-to-donor pairing is not assumed. Multi-guide designs without donors retain all analysed guides. Read pairs are exported separately. Identical donor sequences are deduplicated. These are alternative models, not independent samples or a simultaneous two-donor fit. Never add or average donor HDR scores. ICE donor HDR is not necessarily the intended amino-acid-change fraction. Inspect fit quality and chromatograms. Homology arms must each align for at least 15 bases; ICE validates the alignment.\n\nFiles are packaged locally. Uploading them to ICE shares them with EditCo and is a separate action you perform.\n\nExcluded samples (${plan.excluded.length}):\n${plan.excluded.map(e => `${e.sample}: ${e.reason}`).join('\n') || 'None'}\n\nTemplate: https://ice.editco.bio/misc/ice_example_files.zip (checked 2026-10-13).\n`);
+  bundle.file('START_HERE.txt', `ICE comparison package\n\n1. Extract this outer ZIP into a folder on your computer.\n2. Open https://ice.editco.bio/#/ and choose Batch Upload.\n3. For each batch folder, upload ab1_files.zip on the left and ice_definitions.xlsx on the right. Do not upload this outer package.\n4. Save ICE results beside that batch. Use sample_map.csv to match labels back to your samples.\n\n${plan.samples} samples, ${plan.rows.length} ICE rows, ${batches.length} batches.\nDonor models use exactly one guide and one donor per row. Matched design pairs are exported separately in design order: gRNA1 with ssODN1, gRNA2 with ssODN2. Check this order against your design before uploading. Unequal guide/donor counts require separate designs; a single guide can be compared with multiple donors. Multi-guide designs without donors retain all analysed guides. Read pairs are exported separately. Identical donor sequences paired with different guides remain separate models. These are alternative models, not independent samples or a simultaneous two-donor fit. Never add or average donor HDR scores. ICE donor HDR is not necessarily the intended amino-acid-change fraction. Inspect fit quality and chromatograms. Homology arms must each align for at least 15 bases; ICE validates the alignment.\n\nFiles are packaged locally. Uploading them to ICE shares them with EditCo and is a separate action you perform.\n\nExcluded samples (${plan.excluded.length}):\n${plan.excluded.map(e => `${e.sample}: ${e.reason}`).join('\n') || 'None'}\n\nTemplate: https://ice.editco.bio/misc/ice_example_files.zip (checked 2026-10-13).\n`);
   return { bytes: await bundle.generateAsync({ type: 'uint8array', compression: 'STORE' }), manifest, batches: batches.length };
 }

@@ -16,7 +16,8 @@ export default function IceExport({ tasks, results, getBytes }) {
     finally { setBusy(false); }
   };
   return <details className="ice-export"><summary><b>Compare with ICE</b></summary>
-    <p>{plan.samples} sample{plan.samples === 1 ? '' : 's'} · {plan.rows.length} ICE rows. HDR comparison uses one guide and one donor per row, with separate batches for every guide/donor combination. WT pairing is preserved. These are alternative models; do not add their HDR scores.</p>
+    <p>{plan.samples} sample{plan.samples === 1 ? '' : 's'} · {plan.rows.length} ICE rows. HDR comparison uses one guide and one donor per row, paired in design order: gRNA1 + ssODN1, gRNA2 + ssODN2. Check the pairings below before uploading. WT pairing is preserved. These are alternative models; do not add their HDR scores.</p>
+    {Array.from(new Map(plan.rows.filter(r => r.donor).map(r => [`${r.guides}|${r.donor}`, r])).values()).map(r => <details key={`${r.guides}|${r.donor}`}><summary>gRNA{r.guideIndex} + ssODN{r.donorIndex} ({r.donorName})</summary><p>Guide: <code>{r.guides}</code></p><p style={{overflowWrap: 'anywhere'}}>Donor: <code>{r.donor}</code></p></details>)}
     <p>Two donors are compared as separate models. Do not add their HDR percentages. ICE HDR and intended amino-acid editing can measure different outcomes.</p>
     <label>Rows per ICE batch <select value={batchSize} onChange={e => setBatchSize(Number(e.target.value))} disabled={busy}><option value={96}>96</option><option value={20}>20 (smaller uploads)</option><option value={700}>700</option></select></label>
     <p><button type="button" onClick={download} disabled={busy || !plan.rows.length}>{busy ? 'Preparing ICE package…' : 'Download ICE batch folder (ZIP)'}</button> <a href="https://ice.editco.bio/#/" target="_blank" rel="noreferrer">Open ICE</a></p>
