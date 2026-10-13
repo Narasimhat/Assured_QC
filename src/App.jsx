@@ -2,6 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { WORKFLOWS, headline } from "./batch.js";
 import Detail from "./Detail.jsx";
 import QuickStart from "./QuickStart.jsx";
+import IceExport from "./IceExport.jsx";
+import { planTasks, readDesign } from "./quick.js";
+import { parseAbif } from "./abif.js";
 import { readDesignForForm } from "./quick.js";
 import { buildQcReportHtml, buildResultsCsv } from "./report.js";
 
@@ -41,6 +44,7 @@ export default function App() {
   const [outcome, setOutcome] = useState(null);
   const [picked, setPicked] = useState(0);
   const worker = useRef(null);
+  const [iceRun, setIceRun] = useState(null);
   const flow = WORKFLOWS[workflow];
   const isJunction = flow.method === "junction";
 
@@ -66,6 +70,7 @@ export default function App() {
   }, [running, editedFiles, isJunction, designSpec, controlFile, guides]);
 
   const run = async () => {
+    setIceRun(null);
     setRunning(true); setOutcome(null); setPicked(0); setProgress({ done: 0, total: editedFiles.length, name: "" });
     try {
       const input = {
@@ -74,6 +79,12 @@ export default function App() {
         samples: await Promise.all(editedFiles.map(readFile)),
       };
       if (worker.current) worker.current.terminate();
+      if (!isJunction) {
+        const stored = new Map([input.control, ...input.samples].map(f => [f.name, f.buffer]));
+        const planned = planTasks({ pairs: input.samples.map(f => ({ sample: f.name.replace(/\.ab1$/i, '').replace(/\.[^.]+$/, ''), control: [input.control.name], edited: [f.name], type: sampleType })),
+          getTrace: name => parseAbif(stored.get(name).slice(0), name), design: designSpec ? readDesign(JSON.stringify(designSpec)) : { kind: 'none' }, guides: guides.split(/[,;\s]+/).filter(Boolean), donor, workflow, sampleType });
+        setIceRun({ tasks: planned.tasks, stored });
+      }
       worker.current = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
       worker.current.onmessage = (event) => {
         if (event.data.progress) setProgress(event.data.progress);
@@ -168,6 +179,7 @@ export default function App() {
       {outcome && outcome.ok && (
         <div className="card">
           <h2>Results</h2>
+          {iceRun && iceRun.tasks.length === outcome.results.length && <IceExport tasks={iceRun.tasks} results={outcome.results} getBytes={name => iceRun.stored.get(name)} />}
           {outcome.notes.map((n) => <p key={n} className="note">{n}</p>)}
           <p>
             <button type="button" className="link" onClick={() => download(`assured_qc_${stamp}.html`, buildQcReportHtml({ workflow, design: designLabel, results: outcome.results }), "text/html")}>Download report (HTML)</button>

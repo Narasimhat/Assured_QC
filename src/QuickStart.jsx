@@ -14,6 +14,7 @@ import { cloneSelectionFigure } from "./selectionFigure.js";
 import { saveSvg, savePng, savePdf } from "./saveFigure.js";
 import { NUCLEASES } from "./nucleases.js";
 import Detail from "./Detail.jsx";
+import IceExport from "./IceExport.jsx";
 
 const LABEL = { accept: "Accept", hold: "Hold", "re-sequence": "Sequence again", reject: "Reject" };
 const download = (name, data, type) => { const url = URL.createObjectURL(new Blob([data], { type })); const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000); };
@@ -215,6 +216,9 @@ export default function QuickStart() {
             {runFigure && <button type="button" className="link" onClick={() => download(`assured_qc_protein_products_${stamp}.svg`, runFigure, "image/svg+xml")}>Protein products (SVG)</button>}
             {runFigure && <button type="button" className="link" onClick={() => savePdf(`assured_qc_protein_products_${stamp}.pdf`, runFigure)}>Protein products (PDF)</button>}
           </p>
+          <IceExport tasks={outcome.tasks} results={outcome.results} getBytes={name => {
+            const bytes = buffers.current.get(name); if (!bytes) throw new Error(`Trace no longer available: ${name}`); return bytes;
+          }} />
           <div className="scroll">
             <table><thead><tr><th>Decision</th><th>Sample</th><th>Result</th><th>Edited, 95% interval</th><th>Confidence</th><th>Priority</th></tr></thead><tbody>
               {outcome.results.map((r, i) => (

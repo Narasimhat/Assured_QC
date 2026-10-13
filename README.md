@@ -22,6 +22,8 @@ Lab convention supported throughout: two guides per edit, with the donor carryin
 
 ## Use
 
+**Compare with ICE.** After analysis, expand **Compare with ICE** and download a batch folder ZIP containing ICE workbooks, AB1 archives and a sample map. Two ssODNs become separate donor-model rows for the same trace pair. Nothing is submitted automatically. See [ICE comparison](docs/ice-comparison.md).
+
 **In the browser.** Drop a folder of .ab1 files (and, optionally, the design file exported by the design app, or a sample sheet) onto the start page. Files are paired automatically (control, edited, forward or reverse read) with a stated confidence for every pairing; the pairing table can be edited. The decision for each sample is accept, hold, re-sequence or reject, with the reasons, and the report, CSV, plate view, re-sequence list and a publication figure are one click each. The stepwise form is still available below the start page.
 
 **From the command line** (same engine, parallel worker threads, no browser):
