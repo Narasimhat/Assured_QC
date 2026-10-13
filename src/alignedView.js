@@ -3,6 +3,7 @@
 // control with the offset the analysis used; only where a different mapping with gaps explains the edited calls clearly better (a clean deletion or
 // insertion on both alleles) are the gaps drawn, so a mixed read is never forced into a tidy picture.
 import { shiftAt } from "./offset.js";
+import { annotateSpecProtein, codonPositions, codonsOf, aaOf } from "./protein.js";
 
 export const VIEW_POINTS = 6; // curve points per base
 const BASES = "ACGT";
@@ -81,11 +82,28 @@ export function buildTraceView({ prepared, control, edited }) {
     }
     guides.push(item);
   }
-  const markers = []; for (const m of prepared.spec.markers || []) { const j = refToRead.get(m.pos); if (j !== undefined) { markers.push({ at: j, label: m.label || "", change: `${m.ref}>${m.alt}`, role: m.role || "" }); points.push(j); } }
+  // protein consequence of the designed changes (re-derived here, because a reverse read is seen through the mirrored design)
+  const spec = annotateSpecProtein(prepared.spec); const P = spec.protein || null; const L = spec.reference.sequence.length;
+  const markers = []; for (const m of spec.markers || []) {
+    const j = refToRead.get(m.pos); if (j === undefined) continue;
+    const entry = { at: j, label: m.label || "", change: `${m.ref}>${m.alt}`, role: m.role || "" };
+    if (P && m.protein) { const cp = codonPositions(L, m.pos, P.strand, P.frame); const cols = cp ? cp.cols.map((p) => refToRead.get(p)) : []; if (cols.length === 3 && cols.every((x) => x !== undefined)) entry.protein = { ...m.protein, cols }; }
+    markers.push(entry); points.push(j);
+  }
   let from = Math.max(0, Math.min(...points) - PAD_BEFORE); let to = Math.min(n - 1, Math.max(...points) + PAD_AFTER);
   if (to - from + 1 < MIN_BASES) { const extra = MIN_BASES - (to - from + 1); from = Math.max(0, from - Math.ceil(extra / 2)); to = Math.min(n - 1, to + Math.ceil(extra / 2)); }
   if (to - from + 1 > MAX_BASES) { const mid = Math.round((Math.min(...points) + Math.max(...points)) / 2); from = Math.max(0, mid - MAX_BASES / 2); to = Math.min(n - 1, from + MAX_BASES - 1); }
   const len = to - from + 1; const ctrlCalls = control.calls.slice(from, to + 1);
+  // the codons of the stretch, translated from the control read
+  const codons = [];
+  if (P) {
+    const refs = []; for (let j = from; j <= to; j += 1) { const r = prepared.readToRef[j]; if (r >= 0) refs.push(r); }
+    if (refs.length) codonsOf(spec, Math.min(...refs), Math.max(...refs)).slice(0, 90).forEach((cd) => {
+      const cols = cd.cols.map((p) => refToRead.get(p)); if (cols.some((x) => x === undefined || x < from || x > to)) return;
+      const viewCols = cols.map((x) => x - from); const codon = viewCols.map((i) => (P.strand === "-" ? ({ A: "T", C: "G", G: "C", T: "A" }[ctrlCalls[i]] || "N") : ctrlCalls[i])).join("");
+      codons.push({ cols: viewCols, residue: cd.residue, aa: aaOf(codon) });
+    });
+  }
   // the mapping the analysis used (constant offset, re-anchored at the cut when needed), then a gapped mapping that is kept only when it explains the calls clearly better
   const shifted = []; for (let i = 0; i < len; i += 1) { const k = from + i + shiftAt(prepared, from + i); shifted.push(k >= 0 && k < edited.calls.length ? k : -1); }
   let map = shifted; let mode = "offset";
@@ -103,7 +121,8 @@ export function buildTraceView({ prepared, control, edited }) {
   return {
     v: 1, from, length: len, points: VIEW_POINTS, mode, orientation: prepared.orientation,
     guides: guides.map((g) => ({ name: g.name, strand: g.strand, cut: g.cut - from, spacer: g.spacer ? g.spacer.map((x) => x - from) : null, pam: g.pam ? g.pam.map((x) => x - from) : null })),
-    markers: markers.map((m) => ({ ...m, at: m.at - from })),
+    markers: markers.map((m) => ({ ...m, at: m.at - from, ...(m.protein ? { protein: { ...m.protein, cols: m.protein.cols.map((x) => x - from) } } : {}) })),
+    ...(codons.length ? { protein: { strand: P.strand, codons } } : {}),
     control: { calls: ctrlCalls, curves: curves(control, ctrlIdx) },
     edited: { calls: editedCalls.join(""), second, curves: curves(edited, map), insertions },
   };

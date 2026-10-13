@@ -105,7 +105,7 @@ export async function main(argv) {
   if (args.design) {
     const text = readFileSync(args.design, "utf8");
     if (/^\s*[{[]/.test(text)) designSpec = JSON.parse(text);
-    else { const designs = parseDesignReport(text); const chosen = designs[Number(args["design-index"] || 0)]; design = { guides: chosen.guides.map((g) => g.sequence), donor: reportDonors(chosen.donors) }; console.log(`Design report: ${chosen.title}; ${chosen.guides.length} guide(s), ${chosen.donors.length} donor(s)${Array.isArray(design.donor) ? `; the ${design.donor.length} recommended donors are used together` : ""}.`); }
+    else { const designs = parseDesignReport(text); const chosen = designs[Number(args["design-index"] || 0)]; design = { guides: chosen.guides.map((g) => g.sequence), donor: reportDonors(chosen.donors), protein: chosen.protein }; console.log(`Design report: ${chosen.title}; ${chosen.guides.length} guide(s), ${chosen.donors.length} donor(s)${Array.isArray(design.donor) ? `; the ${design.donor.length} recommended donors are used together` : ""}.`); }
   }
   // 3. one spec per distinct control + guides + donor (the trace is only read once per group)
   // the gene record, if given: each allele is translated and the knockout is judged on the protein (NMD, truncation, splice sites, in-frame changes)
@@ -124,7 +124,7 @@ export async function main(argv) {
     const controlPath = byName.get(job.control[0]); const key = JSON.stringify([controlPath, guides, donor, job.nuclease || nuclease]);
     if (!cache.has(key)) {
       const control = readTrace(controlPath);
-      const plan = planDesign({ designSpec, control, guides, donor, gene: path.basename(folder), nuclease: job.nuclease || nuclease, baseEditor, genbank, codingOptions, editedForCut: jobs.filter((j) => j.control[0] === job.control[0]).slice(0, 6).map((j) => { try { return readTrace(byName.get(j.edited[0])); } catch { return null; } }).filter(Boolean) });
+      const plan = planDesign({ designSpec, control, guides, donor, protein: design.protein, gene: path.basename(folder), nuclease: job.nuclease || nuclease, baseEditor, genbank, codingOptions, editedForCut: jobs.filter((j) => j.control[0] === job.control[0]).slice(0, 6).map((j) => { try { return readTrace(byName.get(j.edited[0])); } catch { return null; } }).filter(Boolean) });
       cache.set(key, plan);
     }
     const plan = cache.get(key);

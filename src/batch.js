@@ -1,5 +1,6 @@
 // Orchestration shared by the app, its worker and the tests: choose the design, analyse one sample, return plain data.
 import { analysePair, analyseReads } from "./analyze.js";
+import { annotateSpecProtein } from "./protein.js";
 import { specFromControl } from "./manualSpec.js";
 import { validateDesignSpec } from "./designSpec.js";
 import { analyseJunctionRead, classifyBands } from "./junction.js";
@@ -19,11 +20,11 @@ export const WORKFLOWS = {
 };
 
 /** Spec from an exported design, or built from the control trace, guides and donor. */
-function planDesignCore({ designSpec, control, guides, donor, gene, nuclease, baseEditor = null, editedForCut = [] }) {
+function planDesignCore({ designSpec, control, guides, donor, gene, nuclease, baseEditor = null, editedForCut = [], protein = [] }) {
   if (designSpec) {
     const check = validateDesignSpec(designSpec);
     if (!check.ok) return { error: `The design file is not usable: ${check.errors[0]}${check.errors.length > 1 ? ` (and ${check.errors.length - 1} more)` : ""}`, warnings: check.warnings };
-    return { spec: designSpec, warnings: check.warnings, source: "design" };
+    return { spec: annotateSpecProtein(designSpec, protein), warnings: check.warnings, source: "design" };
   }
   if (!control) return { error: "Add the control trace, or a design file." };
   const guideList = (Array.isArray(guides) ? guides : String(guides || "").split(/[,\s;]+/)).filter(Boolean);
@@ -45,7 +46,7 @@ function planDesignCore({ designSpec, control, guides, donor, gene, nuclease, ba
     if (!markers.markers.length) return { error: `No ${baseEditor.editor === "CBE" ? "C" : "A"} lies in positions ${(baseEditor.window || [4, 8]).join("-")} of this protospacer, so a ${baseEditor.editor || "ABE"} would not edit it.`, warnings: [] };
     built.spec.markers = markers.markers; built.spec.design.editKind = "base_edit"; built.spec.baseEditor = { editor: baseEditor.editor || "ABE", window: baseEditor.window || [4, 8], target: baseEditor.target ?? null };
   }
-  return { spec: built.spec, warnings: [...notes, ...(built.warnings || [])], source: guideList.length ? "manual" : "inferred cut" };
+  return { spec: annotateSpecProtein(built.spec, protein), warnings: [...notes, ...(built.warnings || [])], source: guideList.length ? "manual" : "inferred cut" };
 }
 
 const codingCache = new Map();
@@ -88,6 +89,7 @@ function traceViewOf(result, control, edited, options) {
 }
 
 export function analyseSample({ name, spec, control, edited, extraReads = [], sampleType = "pool", options = {} }) {
+  spec = annotateSpecProtein(spec); // the protein consequence of the designed changes (a design planned with planDesign has it already); estimates do not use it
   // Coding context (a gene record supplied with the design): turns the frameshift proxy into a functional knockout assessment.
   const codingResult = codingFor(options.codingInput, spec); const coding = codingResult && codingResult.ok ? codingResult.context : null;
   const { codingInput, ...engineOptions } = options;
@@ -105,7 +107,7 @@ export function analyseSample({ name, spec, control, edited, extraReads = [], sa
     functional: result.functional ? compactFunction(result.functional) : null,
     baseEdits: spec.baseEditor ? { editor: spec.baseEditor.editor, window: spec.baseEditor.window, target: spec.baseEditor.target, positions: baseEditTable(result.prepared, result.markerReadout, result.quality.upstreamRms, options.baseEdit || {}) } : null,
     unplanned: (result.unplanned || []).map((h) => ({ relative: h.relative, change: `${h.ref}>${h.alt}`, fraction: round(h.fraction, 3) })),
-    markers: result.markerReadout.map((row) => ({ position: row.marker.pos, change: `${row.marker.ref}>${row.marker.alt}`, role: row.marker.role, label: row.marker.label || "", covered: row.covered, reason: row.reason || "", altEdited: round(row.altEdited), altControl: round(row.altControl), altNet: round(row.altNet) })),
+    markers: result.markerReadout.map((row) => ({ position: row.marker.pos, change: `${row.marker.ref}>${row.marker.alt}`, role: row.marker.role, label: row.marker.label || "", covered: row.covered, reason: row.reason || "", altEdited: round(row.altEdited), altControl: round(row.altControl), altNet: round(row.altNet), ...(row.marker.protein ? { protein: { label: row.marker.protein.label, residue: row.marker.protein.residue, from: row.marker.protein.from, to: row.marker.protein.to, silent: row.marker.protein.silent, codonFrom: row.marker.protein.codonFrom, codonTo: row.marker.protein.codonTo } } : {}) })),
     quality: { upstreamRms: round(result.quality.upstreamRms, 4), upstreamBackground: round(result.quality.upstreamBackground, 4), r2: round(decomposition.r2), noiseFraction: round(decomposition.noiseFraction), rawSum: round(decomposition.rawSum), windowLength: decomposition.windowLength, positionsUsed: decomposition.positionsUsed, candidates: decomposition.candidates, columns: decomposition.columns, discordanceBefore: round(result.quality.discordanceBefore), discordanceNearCut: round(result.quality.discordanceNearCut), discordanceAfter: round(result.quality.discordanceAfter), patches: result.prepared.patches.length },
     charts: { contributions: contributionsSvg(decomposition.contributions), discordance: discordanceSvg(result.prepared) },
     view: traceViewOf(result, control, edited, options),
