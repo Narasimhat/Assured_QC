@@ -3,6 +3,8 @@ import { WORKFLOWS, headline } from "./batch.js";
 import { cloneProteinFigure } from "./proteinFigure.js";
 import { runSummaryFigure } from "./summaryFigure.js";
 import { cloneAlignedFigure, alignedGroups, clonesAlignedFigure, clonesAlignmentFigure } from "./alignedFigure.js";
+import { cloneSelectionFigure } from "./selectionFigure.js";
+import { panelOf } from "./recommend.js";
 
 export const QC_VERSION = "0.5.0";
 const esc = (value) => String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -67,6 +69,26 @@ function sampleSection(workflow, r, { chromatogram = true } = {}) {
   return `${head}${decision}${numbers}${intervals}${reads}${baseEdits}${genotype}${functional}<table><tr><th>Allele</th><th>Type</th><th>Share</th></tr>${contributionRows(r)}</table>${aligned}${r.charts.contributions}${r.charts.discordance}${markers}${provenance}<p class="muted">Fit R&sup2; ${q.r2 === null ? "n/a" : q.r2} (relative to a wild-type-only fit), background signal ${pct(q.noiseFraction)}, ${q.positionsUsed} positions in the window, ${q.columns} distinguishable candidate alleles; mean discordance ${q.discordanceBefore} before the cut${q.discordanceNearCut !== undefined && q.discordanceNearCut !== null ? ` (${q.discordanceNearCut} in the stretch next to it)` : ""}, ${q.discordanceAfter} after it.</p>${r.warnings.length ? `<ul>${r.warnings.map((w) => `<li class="warn">${esc(w)}</li>`).join("")}</ul>` : ""}</div>`;
 }
 
+const NEXT_EDIT = [
+  "Validate: sequence each clone in both directions and read every designed change; a second PCR with primers outside the first pair excludes allelic dropout and a large deletion on one allele. Where a clone carries different silent changes on its two alleles, confirm which allele carries which (clone the amplicon or sequence it deeply). Check the predicted off-target sites of the guides.",
+  "Karyotype: SNP array of the clones carried forward and the parental line (copy number, loss of heterozygosity at the edited locus, recurrent gains).",
+  "Bank: expand the first-choice clones and freeze several vials of each at low passage from the validated pool; keep one reserve vial of the clone held back.",
+  "Quality control: mycoplasma, identity (STR) against the parental line, pluripotency markers, and whole-genome sequencing of the final two or three clones.",
+];
+const NEXT_KO = [
+  "Confirm the knockout at protein level (for example a Western blot with an antibody to a region every product would keep) and read the result back into the run (`--observations`).",
+  "Check the other allele: a PCR across the cut sites with primers outside the first pair excludes a large deletion that Sanger cannot see.",
+  "Karyotype: SNP array of the clones carried forward and the parental line.",
+  "Bank and quality control: freeze several vials at low passage; mycoplasma, identity (STR), pluripotency markers; whole-genome sequencing of the final clones.",
+];
+
+/** The clone selection figure and the suggested next steps for the clones carried forward. */
+export function selectionSection(results, workflow) {
+  const figure = cloneSelectionFigure(results); if (!figure) return "";
+  const names = panelOf(results); const steps = workflow === "knockout" || workflow === "deletion" ? NEXT_KO : NEXT_EDIT;
+  return `<h2>Clone selection</h2><div style="overflow-x:auto">${figure}</div>${names.length ? `<h3>Next steps for ${esc(names.join(", "))}</h3><ol>${steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ol><p class="muted">Suggested steps; adapt them to your own workflow.</p>` : ""}`;
+}
+
 /** The clones of each design on one stretch of the control: the base calls as an alignment, and the chromatograms stacked (up to 48 clones). */
 export function alignedSection(results) {
   const groups = alignedGroups(results); if (!groups.length) return "";
@@ -83,6 +105,7 @@ export function buildQcReportHtml({ title = "Sanger QC report", workflow, design
 <div class="note"><b>Review required.</b> These are computed estimates from Sanger traces. Check the traces and the points flagged below before accepting a clone or releasing a line.</div>
 ${notes.map((n) => `<p>${esc(n)}</p>`).join("")}
 <h2>Summary</h2>${(() => { const fig = runSummaryFigure(results, { title: "Run summary" }); return fig ? `<div style="overflow-x:auto">${fig}</div>` : ""; })()}<table><tr><th>Sample</th><th>Decision</th><th>Result</th><th>Notes</th></tr>${rows}</table>
+${selectionSection(results, workflow)}
 ${alignedSection(results)}
 <h2>Samples</h2>${results.map((r) => sampleSection(workflow, r, { chromatogram: results.length <= 48 || !r.decision || r.decision.decision !== "reject" })).join("")}
 <h2>Method and limits</h2><ul>${METHOD.map((m) => `<li>${esc(m)}</li>`).join("")}</ul>

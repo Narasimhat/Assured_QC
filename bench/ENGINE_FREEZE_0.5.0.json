@@ -1,25 +1,29 @@
 {
- "frozen_at_utc": "2026-10-13T07:40:12Z",
- "purpose": "Engine state of Assured QC 0.5.0 as tagged. 0.5.0 adds the aligned chromatogram figures (reporting layer only); no estimate, call, score, decision or recommendation changes.",
+ "frozen_at_utc": "2026-10-13T08:01:01Z",
+ "purpose": "Engine state of Assured QC 0.5.0 as tagged. 0.5.0 adds the aligned chromatogram figures and the clone selection figure (reporting layer), and reads all recommended donors of a design report for a point edit; with a design file, or a design report with one donor, no estimate, interval, call or decision changes.",
  "supersedes": "bench/ENGINE_FREEZE_0.4.2.json, which is left unchanged",
  "files_changed_since_previous_freeze": [
   "batch.js",
+  "manualSpec.js",
+  "quick.js",
+  "recommend.js",
   "report.js"
  ],
  "files_added_since_previous_freeze": [
   "alignedFigure.js",
-  "alignedView.js"
+  "alignedView.js",
+  "selectionFigure.js"
  ],
- "tests": "30 files, 171 pass, 0 fail (cli-runner.test.js excluded locally; CI runs it)",
+ "tests": "31 files, 178 pass, 0 fail (cli-runner.test.js excluded locally; CI runs it)",
  "no_regression": {
-  "files_byte_identical_to_0_4_2": 39,
+  "files_byte_identical_to_0_4_2": 36,
   "of": 41,
-  "note": "batch.js only attaches the view to the result, report.js draws the new sections and carries the version string; alignedView.js and alignedFigure.js are new. On 24 clones of a real SNP plate, results.csv, recommendation.csv, resequence.csv, summary.svg and plate.html are byte-identical to 0.4.2, and results.json differs only in the run time of each sample."
+  "note": "manualSpec.js (several donors) and quick.js (the donors of a report) change how a design report with several recommended donors is read; recommend.js (default panel), batch.js (the view), report.js and the new alignedView.js, alignedFigure.js and selectionFigure.js are reporting. On 24 clones of a real SNP plate, run from a design file with the same --panel, results.csv, recommendation.csv, resequence.csv, summary.svg and plate.html are byte-identical to 0.4.2, and results.json differs only in the run time of each sample; run from the design report, the results equal those from the design file."
  },
  "engine_sha256": {
   "abif.js": "1f994a5c9021ff0aa1974f3a76b5fb02344e9455e633bfca91bf0a1431a6d159",
   "align.js": "26043b060e8872f81d2b0d3cac0e16d1e3059bf09b2f26a6a9e60ab10ba224c1",
-  "alignedFigure.js": "bbfc36031e1087e4b638d7d13c5470e7e5f87af9a1209e69dc00521092c040b1",
+  "alignedFigure.js": "44e18350e47e2d733b445f82ebcd783cba8ff4a72f44619a0ceba0187a1190af",
   "alignedView.js": "9e60b3d0825b0e421e3d2ab6dbd35f3bdcdb1abf3469233ad7be5bd502f0c616",
   "alleleLibrary.js": "7b873bf05aa052138b92c4dc59cca257452f3e15a7b7c37e35b5118b0b3be198",
   "analyze.js": "a156acac8a408f4bdb660c9d834a4c32eff70aa0297b14971c1bfe3092b9c629",
@@ -38,7 +42,7 @@
   "genbank.js": "6b314070962be5210c9c324eabbfa320099190f52087052a6cec0ea30ac4a6f0",
   "genotype.js": "9613b5c5ccc3f8bc7fd1bbe0f5ec0dbaf53be78b151c4ffb947a3481e986fa2b",
   "junction.js": "760963f847dca0f29ef0877d729f4b8f86f9bbc28fa0de993c2596b986bfb10c",
-  "manualSpec.js": "dce2378ad6996849a44b53235aed910824cca28024d2172940e4b8f62160478e",
+  "manualSpec.js": "3f804cb30704d8cb9d9ee9a048b16baac4d2fffa5f75c12f7d67a3eff478f7fe",
   "markerHeights.js": "2eb266ce88416b047f8bae1133b1e6763b5f47e5b73738c1a4d6733a84b6462e",
   "nnls.js": "166975bb243c21a1e54d3f4d61e5b40cb2c2a843be9b2c46c32cf8a3de8b2416",
   "nucleases.js": "566102814e21e89f659539a1f55e612dab95690e07e9e28950745d2a9cadee2e",
@@ -47,12 +51,13 @@
   "prepare.js": "e6d0315f99471794652c49c53fa018ae0b642dd25f7a3b77a1dbfc9909bc7f2d",
   "proteinFigure.js": "19edec3e850bbb8e7353f270c3833c199a9b42e604dd2d9123c20c6543b53dc3",
   "pursuit.js": "87f576ce8eeabb861ed1944431dd514857da2d1dd0bc9f1a4325eac6eb942019",
-  "quick.js": "aafb2514aa2def9eafbfd9e3b217619715e2d84e80bf3bbfd1eb36ac8ad42c8b",
-  "recommend.js": "7872e116c3d7dc56d905f5dda5e3704a4d62c39e2dca50b87a1ebd40b3ac64e0",
+  "quick.js": "45614827f51e7e6c1a8262e5dc87d543d6aa527276a49024bcf0a0871d5bca60",
+  "recommend.js": "a8d09e78962ba356f52d62fcb4e6c46bb3bea28cbe53fa18529733f13b24acfd",
   "reliability.js": "9282dae369b1bc80d2f1fa8d7f23d0e453ab358e6302cde21713be0ffa541b69",
-  "report.js": "e46492ee20ca68d54ebcecc4342ae0e474f82e326bd011cc5e30255ea5204fbb",
+  "report.js": "12897c253a32a5c14ecf51aad2ad066d3fb21b555a9cbbf039594dab6624d4ce",
   "runJobs.js": "297784a0027cc012f7153f8d74c44ed08c8f83b4c8043ea4c853f676ee4e6257",
   "saveFigure.js": "87464b0ce028dede16b8494b0514432cb471ac3dbce4296c1d0a832e2a8094c5",
+  "selectionFigure.js": "1fbbbb6d7a6b2303478328f026f8554f6814080f0ea79638e2ab6b9bbc81987d",
   "seq.js": "a4c29906e74d34a253d875278e28d6d22de85154d22ab8d82989218b39e455ff",
   "sheet.js": "8cf4faa682dfe7190224ddd07679bd652b5baccb28353e6d1090b6fb21679646",
   "summaryFigure.js": "8652fd3fa81a2d526b1a2756c7bf1d9b338eaf14a6872a7cb79565d9d11ed60b",

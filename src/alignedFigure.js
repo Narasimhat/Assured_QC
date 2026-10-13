@@ -127,15 +127,20 @@ export function cloneAlignedFigure(view, { name = "clone", decision = "", headli
   return svg;
 }
 
+/** One clone as the figures take it: its name, decision, a short note, and its view. */
+export function alignedItem(r) {
+  const s = r.summary || {};
+  return { name: r.name, decision: r.decision ? r.decision.decision : "", note: s.intendedEditPct > 0 ? `intended edit ${s.intendedEditPct}%` : `edited ${s.editedPct}%`, view: r.view };
+}
+
 /** Items of one design, best clone first: [{ name, decision, note, view }] per group of samples that share a design and stretch. */
 export function alignedGroups(results) {
   const groups = new Map();
   summaryOrder(results).forEach((i) => {
     const r = results[i]; if (!r || !r.ok || !r.view) return; const v = r.view;
     const key = `${v.length}|${v.guides.map((g) => g.name).join(",")}|${v.markers.map((m) => `${m.label}${m.change}`).join(",")}`;
-    const s = r.summary || {}; const note = s.intendedEditPct > 0 ? `intended edit ${s.intendedEditPct}%` : `edited ${s.editedPct}%`;
     if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push({ name: r.name, decision: r.decision ? r.decision.decision : "", note, view: v });
+    groups.get(key).push(alignedItem(r));
   });
   return [...groups.values()];
 }

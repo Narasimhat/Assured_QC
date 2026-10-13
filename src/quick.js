@@ -52,10 +52,17 @@ export function inferWorkflow(spec) {
   return spec.guides.length > 1 ? "deletion" : "knockout";
 }
 
+/** The donors of a design report that are used together: all the ones recommended to order (ssODNs matched to each guide), else the first; one donor stays a plain sequence. */
+export function reportDonors(donors) {
+  const chosen = donors.filter((d) => d.recommended); const list = chosen.length ? chosen : donors.slice(0, 1);
+  if (list.length <= 1) return list[0] ? list[0].sequence : "";
+  return list.map((d) => ({ name: d.name, sequence: d.sequence }));
+}
+
 /** One task per sample. `getTrace(name)` returns a parsed trace; the plan (spec) is made once per distinct control, guides and donor. */
 export function planTasks({ pairs, getTrace, design = { kind: "none" }, guides = [], donor = "", nuclease = "SpCas9", workflow = "auto", sampleType = "", goal = "homozygous", baseEditor = null, genbank = "", codingOptions = {} }) {
   const cache = new Map(); const tasks = []; const problems = [];
-  const designGuides = design.kind === "report" ? design.guides : []; const designDonor = design.kind === "report" ? ((design.donors.find((d) => d.recommended) || design.donors[0] || {}).sequence || "") : "";
+  const designGuides = design.kind === "report" ? design.guides : []; const designDonor = design.kind === "report" ? reportDonors(design.donors) : "";
   pairs.forEach((pair, index) => {
     const g = pair.guides?.length ? pair.guides : (guides.length ? guides : designGuides); const d = pair.donor || donor || designDonor;
     const key = JSON.stringify([pair.control[0], g, d, design.kind === "spec" ? "spec" : "", pair.nuclease || nuclease]);
