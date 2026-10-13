@@ -32,6 +32,7 @@ export default function App() {
   const [designName, setDesignName] = useState("");
   const [designError, setDesignError] = useState("");
   const [designNote, setDesignNote] = useState("");
+  const [designProtein, setDesignProtein] = useState([]);
   const [guides, setGuides] = useState("");
   const [donor, setDonor] = useState("");
   const [gene, setGene] = useState("");
@@ -52,14 +53,14 @@ export default function App() {
 
   const onDesign = async (event) => {
     const file = event.target.files[0];
-    setDesignError(""); setDesignSpec(null); setDesignName(""); setDesignNote("");
+    setDesignError(""); setDesignSpec(null); setDesignName(""); setDesignNote(""); setDesignProtein([]);
     if (!file) return;
     const isReport = /\.html?$/i.test(file.name);
     try {
       const read = readDesignForForm(await file.text(), { needsDonor: flow.needsDonor, isJunction });
       setDesignName(file.name);
       if (read.kind === "spec") setDesignSpec(read.spec);
-      else { setGuides(read.guides); if (read.donor) setDonor(read.donor); setDesignNote(read.note); }
+      else { setGuides(read.guides); if (read.donor) setDonor(read.donor); setDesignNote(read.note); setDesignProtein(read.protein || []); }
     } catch (error) { setDesignError(isReport ? `That design report could not be read: ${error.message}` : `That file is not valid JSON: ${error.message}`); }
   };
 
@@ -74,7 +75,7 @@ export default function App() {
     setRunning(true); setOutcome(null); setPicked(0); setProgress({ done: 0, total: editedFiles.length, name: "" });
     try {
       const input = {
-        workflow, designSpec, manual: { guides, donor, gene: gene || "sample" }, sampleType, bandsText,
+        workflow, designSpec, manual: { guides, donor, gene: gene || "sample", protein: designProtein }, sampleType, bandsText,
         control: controlFile && !isJunction ? await readFile(controlFile) : null,
         samples: await Promise.all(editedFiles.map(readFile)),
       };

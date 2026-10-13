@@ -27,7 +27,7 @@ export function readDesign(text, { designIndex = 0 } = {}) {
   if (!text) return { kind: "none" };
   if (/^\s*[{[]/.test(text)) { const spec = JSON.parse(text); return { kind: "spec", spec, label: spec.design?.label || spec.design?.gene || "design file" }; }
   const designs = parseDesignReport(text); const chosen = designs[Math.min(designIndex, designs.length - 1)];
-  return { kind: "report", designs, chosen, guides: chosen.guides.map((g) => g.sequence), donors: chosen.donors, label: chosen.title };
+  return { kind: "report", designs, chosen, guides: chosen.guides.map((g) => g.sequence), donors: chosen.donors, label: chosen.title, protein: chosen.protein || [] };
 }
 
 /**
@@ -43,7 +43,7 @@ export function readDesignForForm(text, { needsDonor = false, isJunction = false
   const notes = [`Read ${plural(d.guides.length, "guide")} and ${plural(d.donors.length, "donor")} from the design report "${d.label}"${d.designs.length > 1 ? ` (the file holds ${d.designs.length} designs; the first was used)` : ""}.`];
   if (needsDonor && !donor) notes.push("The report has no ssODN donor (a long knock-in donor is not read from a report): paste it below.");
   if (isJunction) notes.push("The junction check needs the .json design file; a report gives only guides and donors.");
-  return { kind: "report", guides: d.guides.join(", "), donor: donor ? donor.sequence : "", label: d.label, note: notes.join(" ") };
+  return { kind: "report", guides: d.guides.join(", "), donor: donor ? donor.sequence : "", label: d.label, protein: d.protein || [], note: notes.join(" ") };
 }
 
 export function inferWorkflow(spec) {
@@ -69,7 +69,7 @@ export function planTasks({ pairs, getTrace, design = { kind: "none" }, guides =
     if (!cache.has(key)) {
       const control = getTrace(pair.control[0]);
       const sameControl = pairs.filter((p) => p.control[0] === pair.control[0]).slice(0, 6);
-      cache.set(key, planDesign({ designSpec: design.kind === "spec" ? design.spec : null, control, guides: g, donor: d, gene: "sample", nuclease: pair.nuclease || nuclease, baseEditor, genbank, codingOptions, editedForCut: g.length || design.kind === "spec" ? [] : sameControl.map((p) => { try { return getTrace(p.edited[0]); } catch { return null; } }).filter(Boolean) }));
+      cache.set(key, planDesign({ designSpec: design.kind === "spec" ? design.spec : null, control, guides: g, donor: d, protein: design.kind === "report" ? design.protein : undefined, gene: "sample", nuclease: pair.nuclease || nuclease, baseEditor, genbank, codingOptions, editedForCut: g.length || design.kind === "spec" ? [] : sameControl.map((p) => { try { return getTrace(p.edited[0]); } catch { return null; } }).filter(Boolean) }));
     }
     const plan = cache.get(key);
     if (plan.error) { problems.push(`${pair.sample}: ${plan.error}`); return; }

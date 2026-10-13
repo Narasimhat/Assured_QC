@@ -1,5 +1,11 @@
 # Release notes
 
+## Unreleased
+
+- Amino-acid annotation of the designed changes (`src/protein.js`, `docs/design-handoff.md`). A design names the codons of its changes: a design report has `p.L177L: CTG -> CTA` for each silent change, a design file has marker labels such as `p.L173L` with `CTG>CTC` and the design label `R176C (CGC>TGC)`. From those the strand and reading frame of the control read are found, and every designed change gets its amino-acid change, the intended edit too. Figures: the markers read `R176C CGC>TGC` and `L177L silent CTG>CTA` instead of `intended change C>T`; a protein row translates the control in the design's reading frame, with the designed codons coloured and numbered; a box under each clone gives its residue at the designed codons (a second base of at least 20 % shows as `R/C`, dashed) and at up to three codons that changed without being designed (red). The selection figure's table headers and the report's per-position table carry the same labels. `results.json` markers gain a `protein` object.
+- Nothing is added when the design names no codons, when no frame fits them equally well, for bases labelled noncoding, or for bases past the first in-frame stop codon. No estimate, call or decision uses the annotation; the estimation files are unchanged.
+- Limits: the frame comes from the design's own notes, not from a gene record, and the protein row translates the genomic read, so an intron inside the stretch would be translated as well.
+
 ## 0.5.2 (2026-10-13)
 
 - PDF export: every figure can be saved as a vector PDF (browser: a (PDF) button next to (SVG) and (PNG) for the clone selection, base-call alignment, aligned chromatograms, summary graph, protein products, the aligned chromatogram and the figure of the selected sample; command line: `run` writes a `.pdf` next to each `.svg`, `--no-pdf` turns that off, and `figure --out figure.pdf` works). The PDF is drawn from the SVG by a new dependency-free converter, `src/svgPdf.js`; text uses the standard Helvetica and Courier faces (not embedded). See `docs/pdf-export.md`.
