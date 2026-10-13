@@ -1,9 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "vite",
-  "installCommand": "npm ci",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
   "headers": [
     {
       "source": "/(.*)",
@@ -18,11 +14,5 @@
         }
       ]
     }
-  ],
-  "functions": {
-    "api/ice.py": {
-      "maxDuration": 60,
-      "excludeFiles": "{.venv/**,node_modules/**,fixtures/**,bench/**,test/**}"
-    }
-  }
+  ]
 }

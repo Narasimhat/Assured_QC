@@ -8,6 +8,3 @@ bench/config.json
 bench/__pycache__/
 *.pyc
 docs/known-mixture-key.csv
-
-.venv/
-__pycache__/

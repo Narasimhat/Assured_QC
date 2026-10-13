@@ -73,7 +73,7 @@ export function planTasks({ pairs, getTrace, design = { kind: "none" }, guides =
     }
     const plan = cache.get(key);
     if (plan.error) { problems.push(`${pair.sample}: ${plan.error}`); return; }
-    tasks.push({ iceNuclease: pair.nuclease || nuclease, index: tasks.length, name: pair.sample, spec: plan.spec, workflow: workflow !== "auto" ? workflow : baseEditor ? "base_edit" : (pair.workflow || inferWorkflow(plan.spec)), sampleType: sampleType || pair.type || "clone", controls: pair.control, edited: pair.edited, decisionOptions: { goal }, options: plan.codingInput ? { codingInput: plan.codingInput } : {}, planNotes: plan.warnings || [], pairing: { confidence: pair.confidence, reason: pair.reason }, well: wellOf(pair.edited[0]) });
+    tasks.push({ index: tasks.length, name: pair.sample, spec: plan.spec, workflow: workflow !== "auto" ? workflow : baseEditor ? "base_edit" : (pair.workflow || inferWorkflow(plan.spec)), sampleType: sampleType || pair.type || "clone", controls: pair.control, edited: pair.edited, decisionOptions: { goal }, options: plan.codingInput ? { codingInput: plan.codingInput } : {}, planNotes: plan.warnings || [], pairing: { confidence: pair.confidence, reason: pair.reason }, well: wellOf(pair.edited[0]) });
   });
   return { tasks, problems };
 }
