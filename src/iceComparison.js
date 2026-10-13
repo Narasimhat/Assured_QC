@@ -17,6 +17,7 @@ export async function runIce(task, files, nuclease='SpCas9') {
     const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),65000);
     try{
       const response=await fetch('/api/ice',{method:'POST',body:form,signal:abort.signal});
+      if (!response.headers.get('content-type')?.includes('application/json')) throw Error(`ICE server unavailable (HTTP ${response.status}). Assured QC results are unchanged; try again later.`);
       const data=await response.json();
       if(!response.ok || !data.ok) throw Error(data.error || 'ICE failed.');
       const hash=async file=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await file.arrayBuffer()))).map(v=>v.toString(16).padStart(2,'0')).join('');
