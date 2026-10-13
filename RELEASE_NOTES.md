@@ -1,5 +1,14 @@
 # Release notes
 
+## 0.5.3 (2026-10-13)
+
+- Comparison with Synthego ICE on the command line (`--ice FOLDER`; `docs/ice-comparison.md`). ICE runs on the same traces in separate processes (once per donor for a point edit or tag, best donor shown) and its score is put beside the Assured QC score in `ice_comparison.csv`, `ice_vs_assuredqc.svg`/`.pdf` and a section of `report.html`; `ice_raw.json` and `run.json` record the ICE version, the inputs by SHA-256 and what ICE returned. ICE changes no call, rank, score or figure and is not bundled.
+- A score from an ICE fit with R squared below 0.8 is reported as "ICE fit poor", not as a disagreement, and the alleles Assured QC reads that ICE does not place are named (for example a compound heterozygote whose two deletions differ by one base). Scores 15 points apart with a sound fit are flagged "differ".
+- Two-step use: `--ice-plan` writes `ice_jobs.json`, `scripts/run_ice_plan.py` runs ICE wherever Python and ICE are, and `--ice-raw` reads the result back (accepted only for the same samples, guides, donors and traces).
+- Fix in `scripts/run_ice_jobs.py`: ICE writes NaN for some diagnostics, which is not valid JSON; non-finite numbers are now written as null, and the reader also accepts NaN written by older versions.
+- The browser is unchanged (ICE needs Python and would mean uploading traces). Engine files are byte-identical to 0.5.2 apart from the new `iceCompare.js` (pure comparison logic) and `report.js` (an optional section and the version).
+- Tests: `test/ice-compare.test.js` (13 tests, simulated results and a stand-in for the Python process: statuses, best donor, jobs, matching of earlier results, NaN, the launcher and its failures).
+
 ## 0.5.2 (2026-10-13)
 
 - PDF export: every figure can be saved as a vector PDF (browser: a (PDF) button next to (SVG) and (PNG) for the clone selection, base-call alignment, aligned chromatograms, summary graph, protein products, the aligned chromatogram and the figure of the selected sample; command line: `run` writes a `.pdf` next to each `.svg`, `--no-pdf` turns that off, and `figure --out figure.pdf` works). The PDF is drawn from the SVG by a new dependency-free converter, `src/svgPdf.js`; text uses the standard Helvetica and Courier faces (not embedded). See `docs/pdf-export.md`.

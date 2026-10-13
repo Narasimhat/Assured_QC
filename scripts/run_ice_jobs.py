@@ -1,7 +1,14 @@
 
-import sys, os, json, time, traceback, tempfile, shutil, io, contextlib
+import sys, os, json, time, traceback, tempfile, shutil, io, contextlib, math
 ICE = sys.argv[1]; jobs_path = sys.argv[2]; out_path = sys.argv[3]; nproc = int(sys.argv[4]) if len(sys.argv) > 4 else 1
 sys.path.insert(0, ICE)
+
+def clean(o):
+    """JSON has no NaN or Infinity: a non-finite diagnostic value (ICE writes NaN for some) becomes null."""
+    if isinstance(o, float) and not math.isfinite(o): return None
+    if isinstance(o, dict): return {k: clean(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)): return [clean(v) for v in o]
+    return o
 
 def run_one(args):
     i, job = args
@@ -44,5 +51,5 @@ if __name__ == "__main__":
         with mp.Pool(nproc) as pool:
             for i, r in pool.imap_unordered(run_one, items):
                 out[i] = r; print(i, r.get("ok"), r.get("seconds"), flush=True)
-                json.dump(out, open(out_path, "w"))
-    json.dump(out, open(out_path, "w"))
+                json.dump(clean(out), open(out_path, "w"), allow_nan=False)
+    json.dump(clean(out), open(out_path, "w"), allow_nan=False)
