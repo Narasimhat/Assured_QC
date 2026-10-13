@@ -134,3 +134,16 @@ test("command line: run ranks the clones and writes recommendation.csv; recommen
     assert.equal(await cli(["recommend", path.join(dir, "missing.json")]), 1);
   } finally { console.log = original; }
 });
+
+test("a wanted edit: clones of the same genotype are replicates and all count; clones that do not carry the edit are not recommended and do not take a rank", () => {
+  const snp = (name, lower, decision = "accept", over = {}) => ({ ok: true, kind: "trace-pair", name, workflow: "snp", sampleType: "clone", confidence: { tier: "high" }, warnings: [], summary: { intendedEditPct: lower + 2, editedPct: 100 }, intervals: { intendedEditPct: [lower, 100] },
+    genotype: { category: "homozygous_edit", alleles: [{ label: "Intended edit", kind: "edit", size: 0 }] }, decision: { decision, reasons: [], next: "" }, ...over });
+  const results = [snp("a", 98), snp("b", 97), snp("c", 96), snp("d", 84, "hold"), snp("e", 0, "hold", { genotype: { category: "homozygous_indel", alleles: [{ label: "-13 bp", kind: "indel", size: -13 }] } }), snp("f", 10, "hold")];
+  const rec = recommendClones(results, { panel: 3 }); const by = Object.fromEntries(results.map((r, i) => [r.name, rec[i]]));
+  assert.deepEqual(["a", "b", "c"].map((n) => by[n].priority), ["first", "first", "first"], "three clones of one genotype are all first choices");
+  assert.equal(by.d.priority, "reserve"); assert.match(by.d.action, /wanted edit/); assert.match(by.a.action, /wanted edit/);
+  assert.equal(by.e.priority, "not_recommended"); assert.equal(by.e.rank, null); assert.equal(by.f.priority, "not_recommended"); assert.match(by.e.action, /does not support the wanted edit/);
+  assert.deepEqual(["a", "b", "c", "d"].map((n) => by[n].rank), [1, 2, 3, 4], "ranks are contiguous: not recommended clones take none");
+  assert.deepEqual(panelOf(withRecommendations(results, { panel: 3 })), ["a", "b", "c"]);
+  const ko = clone("k", [NMD("x", 0.5), WT(0.5)]); assert.equal(recommendClones([ko])[0].priority, "not_recommended", "a knockout clone with wild type is not recommended");
+});

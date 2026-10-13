@@ -3,7 +3,7 @@ import { WORKFLOWS, headline } from "./batch.js";
 import { cloneProteinFigure } from "./proteinFigure.js";
 import { runSummaryFigure } from "./summaryFigure.js";
 
-export const QC_VERSION = "0.4.1";
+export const QC_VERSION = "0.4.2";
 const esc = (value) => String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const pct = (value) => (value === null || value === undefined ? "n/a" : `${(value * 100).toFixed(1)}%`);
 
