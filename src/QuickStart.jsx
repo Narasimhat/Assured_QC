@@ -13,6 +13,7 @@ import { alignedGroups, clonesAlignedFigure, clonesAlignmentFigure } from "./ali
 import { cloneSelectionFigure } from "./selectionFigure.js";
 import { saveSvg, savePng, savePdf } from "./saveFigure.js";
 import { NUCLEASES } from "./nucleases.js";
+import { expandImportFiles } from "./importFiles.js";
 import Detail from "./Detail.jsx";
 import IceExport from "./IceExport.jsx";
 
@@ -28,6 +29,7 @@ export default function QuickStart() {
   const [guidesText, setGuidesText] = useState(""); const [donorText, setDonorText] = useState(""); const [nuclease, setNuclease] = useState("SpCas9"); const [typeOverride, setTypeOverride] = useState(""); const [goal, setGoal] = useState("homozygous");
   const [pairsEdit, setPairsEdit] = useState({}); const [running, setRunning] = useState(false); const [progress, setProgress] = useState(null);
   const [outcome, setOutcome] = useState(null); const [picked, setPicked] = useState(0); const [panel, setPanel] = useState(0); const [figureBusy, setFigureBusy] = useState(false); const [error, setError] = useState("");
+  const [importStatus, setImportStatus] = useState("");
   const [dragging, setDragging] = useState(false);
   const [designIndex, setDesignIndex] = useState(0);
 
@@ -35,13 +37,22 @@ export default function QuickStart() {
     if (running) return;
     try {
       setError("");
+      const selected = Array.from(list || []);
+      setImportStatus("Reading selected files…");
+      const expanded = await expandImportFiles(selected);
       const duplicates = [];
       const seen = new Set(files.current.keys());
-      const incoming = Array.from(list).filter((f) => {
+      const incoming = expanded.files.filter((f) => {
         if (/\.(ab1|abi)$/i.test(f.name) && seen.has(f.name)) { duplicates.push(f.name); return false; }
         seen.add(f.name); return true;
       });
       const kinds = classifyFiles(incoming.map((f) => f.name));
+      setImportStatus(`${kinds.traces.length} new traces; ${duplicates.length} traces already loaded; ${kinds.designs.length} design files; ${kinds.sheets.length} sample-sheet files; ${expanded.skipped.length} unsupported files skipped.`);
+      if (!incoming.length) {
+        if (duplicates.length) setImportStatus(`All ${duplicates.length} selected traces are already loaded. Your existing analysis is unchanged. See Loaded traces below.`);
+        else setImportStatus(selected.length ? "No supported files found. Select the folder containing AB1 files, or use Add files to select AB1 files or a sequencing ZIP." : "The browser returned no files. Use Add files to select the AB1 files inside the folder; for a network drive, try a local copy.");
+        return;
+      }
       incoming.forEach((f) => { files.current.set(f.name, f); buffers.current.delete(f.name); });
       setTraceNames((previous) => Array.from(new Set([...previous, ...kinds.traces]))); setPairsEdit({}); setOutcome(null);
       const sheet = incoming.find((f) => kinds.sheets.includes(f.name)); if (sheet) setSheetText(await sheet.text());
@@ -49,7 +60,7 @@ export default function QuickStart() {
       const gene = incoming.find((f) => kinds.genes.includes(f.name)); if (gene) { setGeneText(await gene.text()); setGeneName(gene.name); }
       if (duplicates.length) setError(`Already loaded: ${duplicates.join(", ")}. Kept the existing traces. For different reads with the same filename, rename them before adding; to replace a trace, remove it first.`);
       if (kinds.designs.length > 1) setError("More than one design file was selected. Loaded the first; use the design picker below to choose a different report.");
-    } catch (e) { setError(`Could not read the selected file. Try copying it from the network drive to a local folder and selecting it again. ${e.message || ""}`); }
+    } catch (e) { setImportStatus(""); setError(`Could not read the selected file. Try copying it from the network drive to a local folder and selecting it again. ${e.message || ""}`); }
   };
 
   const built = useMemo(() => (traceNames.length ? buildPairs({ traceNames, sheetText }) : { pairs: [], problems: [] }), [traceNames, sheetText]);
@@ -102,13 +113,14 @@ export default function QuickStart() {
       <h2>Quick start: drop your files</h2>
       <div className={`drop${dragging ? " over" : ""}`} onDragOver={(e) => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={(e) => { e.preventDefault(); setDragging(false); addFiles(e.dataTransfer.files); }}>
         <p><b>Drop the .ab1 files here</b> (controls and samples together, forward and reverse reads), plus, if you have them, the design (report .html or file .json) a sample sheet (.csv) and the gene record (GenBank, .gb).</p>
-        <input ref={filePicker} hidden style={{ display: "none" }} type="file" multiple accept=".ab1,.abi,.csv,.tsv,.json,.html,.htm,.gb,.gbk,.gbff,.genbank,text/html,application/json" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} aria-label="Choose files" />
-        <p><button type="button" disabled={running} onClick={() => filePicker.current.click()}>Add files (AB1, HTML, JSON, CSV or GenBank)</button></p>
+        <input ref={filePicker} hidden style={{ display: "none" }} type="file" multiple accept=".zip,.ab1,.abi,.csv,.tsv,.json,.html,.htm,.gb,.gbk,.gbff,.genbank,text/html,application/json" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} aria-label="Choose files" />
+        <p><button type="button" disabled={running} onClick={() => filePicker.current.click()}>Add files (AB1, ZIP, HTML, JSON, CSV or GenBank)</button></p>
         <input ref={folderPicker} hidden style={{ display: "none" }} type="file" multiple webkitdirectory="" directory="" disabled={running} onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} aria-label="Choose a folder" />
         <p><button type="button" disabled={running} onClick={() => folderPicker.current.click()}>Add a folder</button> <span className="muted">Imports supported files inside a folder. To select one HTML report, use Add files or Choose design report.</span></p>
         <p>Select files from one folder, then click Add files again for another folder. Earlier traces and your design stay loaded. You can also add folders one at a time.</p>
         <p className="muted">Nothing is uploaded: the files are read and analysed in this browser.</p>
       </div>
+      {importStatus && <p role="status" className="note">{importStatus}</p>}
       {traceNames.length > 0 && <details open>
         <summary>Loaded traces ({traceNames.length})</summary>
         <ul>{traceNames.map((name) => <li key={name}><span>{name}</span> <button type="button" disabled={running} aria-label={`Remove trace ${name}`} onClick={() => {
