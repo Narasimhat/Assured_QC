@@ -1,0 +1,58 @@
+# CITATION.cff for Assured QC
+# Draft prepared for owner review. Items marked TODO(owner) need a decision or data only the owner has.
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata in this file. A versioned archive DOI will be added after the first archived release."
+type: software
+title: "Assured QC"
+abstract: >-
+  In-browser Sanger-trace quality control for CRISPR edits (control/edited .ab1 pairs): allele deconvolution
+  with intervals, accept/hold/re-sequence decisions for clones, a command-line runner and a benchmark harness.
+  It reads the design hand-off file (assured-qc-design/1) written by ASSURED CRISPR Designer. Traces are analysed
+  in the browser or locally; nothing is uploaded.
+authors:
+  - family-names: Telugu
+    given-names: Narasimha
+    affiliation: "Max Delbrück Center for Molecular Medicine in the Helmholtz Association (MDC), Berlin, Germany"
+    # TODO(owner): add orcid: "https://orcid.org/0000-0000-0000-0000" and any co-authors before release.
+repository-code: "https://github.com/Narasimhat/Assured_QC"
+url: "https://assured-qc.vercel.app"
+license: MIT
+keywords:
+  - CRISPR
+  - Sanger sequencing
+  - genome editing
+  - clone screening
+  - indel analysis
+  - human induced pluripotent stem cells
+# TODO(owner): after the archive deposit add
+#   version: <tag>
+#   date-released: <YYYY-MM-DD>
+#   doi: <archive DOI>
+# and, once the manuscript is published, a preferred-citation block for it.
+references:
+  - type: software
+    title: "ASSURED CRISPR Designer"
+    authors:
+      - family-names: Telugu
+        given-names: Narasimha
+    repository-code: "https://github.com/Narasimhat/Assured_CRISPR_Design"
+    notes: "Companion design app; writes the assured-qc-design/1 hand-off file read by Assured QC."
+  - type: article
+    authors:
+      - family-names: Ludwik
+        given-names: Katarzyna A.
+      - family-names: Telugu
+        given-names: Narasimha
+      - family-names: Schommer
+        given-names: Sandra
+      - family-names: Stachelscheid
+        given-names: Harald
+      - family-names: Diecke
+        given-names: Sebastian
+    title: "ASSURED-optimized CRISPR protocol for knockout/SNP knockin in hiPSCs"
+    journal: "STAR Protocols"
+    volume: 4
+    year: 2023
+    month: 9
+    doi: "10.1016/j.xpro.2023.102406"
+    notes: "The protocol that this software supports and extends."

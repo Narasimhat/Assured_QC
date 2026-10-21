@@ -4,7 +4,7 @@ Sanger-trace quality control for CRISPR edits in the browser: knockouts, deletio
 
 **Your files stay on your computer.** Traces are read and analysed inside the browser (in a web worker); nothing is uploaded and there is no server.
 
-Status: 0.3.1 (adds offset re-anchoring at the cut, an unplanned-base-change check and the functional knockout assessment; see docs/changes-0.3.0.md; engine freeze in bench/ENGINE_FREEZE_0.3.1.json). See "Accuracy and limits" before using results to accept or reject clones.
+Status: 0.5.2 (see RELEASE_NOTES.md for what changed in each version). See "Accuracy and limits" before using results to accept or reject clones.
 
 ## Workflows
 
@@ -78,7 +78,7 @@ On 172 laboratory pairs there is no sequencing-confirmed truth; the engine agree
 
 ```
 npm ci
-npm test          # engine tests (node:test), no browser needed (107 tests)
+npm test          # engine tests (node:test), no browser needed
 npm run dev       # http://localhost:5174
 npm run build
 node scripts/validate.mjs out.csv   # own engine vs known mixtures vs ICE on the synthetic traces
@@ -89,6 +89,14 @@ python bench/score.py jobs.json out/ prefix --split test    # scorer frozen in b
 
 The analysis modules in `src/` are plain ES modules with no browser or Node dependencies (`abif.js`, `align.js`, `decompose.js`, ...); `src/runJobs.js` is what the worker runs, `src/App.jsx` is the interface. `scripts/make_qc_fixtures.py` regenerates the synthetic traces (deterministic).
 
+## How to cite
+
+Citation metadata is in [CITATION.cff](./CITATION.cff) (GitHub shows it under **Cite this repository**). Until a versioned archive with a DOI is published, cite the protocol this software supports and extends, and state the commit or release you used:
+
+> Ludwik KA, Telugu N, Schommer S, Stachelscheid H, Diecke S. ASSURED-optimized CRISPR protocol for knockout/SNP knockin in hiPSCs. *STAR Protocols* 4 (2023), 102406. https://doi.org/10.1016/j.xpro.2023.102406
+
+The companion design app is [Assured CRISPR Design](https://github.com/Narasimhat/Assured_CRISPR_Design).
+
 ## Credits and licensing
 
-The engine is written from scratch for this project. Synthego ICE (https://github.com/synthego-open/ice, Conant et al., CRISPR J 2022) was run only as a reference to compare results; none of its code is included, and its example traces are not redistributed. The repository licence has not been set yet.
+The engine is written from scratch for this project. Synthego ICE (https://github.com/synthego-open/ice, Conant et al., CRISPR J 2022) was run only as a reference to compare results; none of its code is included on `main`, and its example traces are not redistributed. The comparator tools used by the benchmark harness in `bench/` (ICE, peaksplit, Assured_TraceEdit, sangerdecon) are not included; they run from local checkouts under their own licences. The repository is released under the MIT licence (see [LICENSE](./LICENSE)); the MIT licence covers the code and documentation written for this project, not those tools.
