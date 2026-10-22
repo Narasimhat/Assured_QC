@@ -1,3 +1,4 @@
+import ProvenancePanel from './ProvenancePanel.jsx';
 import { useEffect, useMemo, useRef, useState } from "react";
 import { WORKFLOWS, headline } from "./batch.js";
 import Detail from "./Detail.jsx";
@@ -107,6 +108,7 @@ export default function App() {
       <p><a href="https://assured-traceedit.vercel.app/unified.html">Open Assured Analysis: one project setup, AssuredQC + TraceEdit results</a></p>
       <p className="muted">Sanger-trace QC for CRISPR knockouts, deletions, SNP corrections and knock-ins. Files are read and analysed in your browser; nothing is uploaded.</p>
 
+      <ProvenancePanel source="Assured QC" />
       <QuickStart />
 
       <details className="card"><summary><b>Or set everything by hand (one control, one design, one workflow)</b></summary>

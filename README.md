@@ -92,3 +92,9 @@ The analysis modules in `src/` are plain ES modules with no browser or Node depe
 ## Credits and licensing
 
 The engine is written from scratch for this project. Synthego ICE (https://github.com/synthego-open/ice, Conant et al., CRISPR J 2022) was run only as a reference to compare results; none of its code is included, and its example traces are not redistributed. The repository licence has not been set yet.
+
+## FAIR metadata and provenance notary
+
+Open **FAIR metadata & provenance notary** in the app. Select a downloaded design JSON, report, CSV, or raw dataset, complete the twelve metadata fields, and download its JSON certificate. In the same panel, select a certificate and a received file to compare fingerprints. Files remain in the browser; no remote requests or storage are added. Limits: 50 MB dataset and 1 MB imported certificate.
+
+The score is metadata completeness (12 equal-weight presence checks, plus HTTPS URL syntax), not formal FAIR certification or scientific/regulatory approval. Schema conformance, repository availability, vocabulary, licenses, and global identifier persistence are not independently checked. Records use SHA-256 and sorted-key canonical JSON (`assured-provenance/1`), with local UTC time and explicit `unanchored` status. Certificates are self-issued: an attacker can replace both a record and its hash. A trusted original or independently verified signature/ledger anchor is required to establish issuer provenance. No blockchain transaction or immutable ledger is implemented. Existing scientific release/QC decisions are unaffected.
