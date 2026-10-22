@@ -92,3 +92,17 @@ The analysis modules in `src/` are plain ES modules with no browser or Node depe
 ## Credits and licensing
 
 The engine is written from scratch for this project. Synthego ICE (https://github.com/synthego-open/ice, Conant et al., CRISPR J 2022) was run only as a reference to compare results; none of its code is included, and its example traces are not redistributed. The repository licence has not been set yet.
+
+## FAIR metadata and provenance notary
+
+Open **FAIR metadata & provenance notary** in the app. Select a downloaded design JSON, report, CSV, or raw dataset, complete the twelve metadata fields, and download its JSON certificate. In the same panel, select a certificate and a received file to compare fingerprints. Files remain in the browser; no remote requests or storage are added. Limits: 50 MB dataset and 1 MB imported certificate.
+
+The score is metadata completeness (12 equal-weight presence checks, plus HTTPS URL syntax), not formal FAIR certification or scientific/regulatory approval. Schema conformance, repository availability, vocabulary, licenses, and global identifier persistence are not independently checked. Records use SHA-256 and sorted-key canonical JSON (`assured-provenance/1`), with local UTC time and explicit `unanchored` status. Certificates are self-issued: an attacker can replace both a record and its hash. A trusted original or independently verified signature/ledger anchor is required to establish issuer provenance. No blockchain transaction or immutable ledger is implemented. Existing scientific release/QC decisions are unaffected.
+
+## iPSC Edit Passport
+
+The notary panel also contains Creator and Auditor workspaces. Fill the shared FAIR metadata, then record clone/parental identifiers, assembly/locus, a SpCas9 guide, editing strategy, user-reported fraction/zygosity, and the analysis tool, version and JSON parameters. Attach design, raw-sequencing and analysis files; optional identity, pluripotency, karyotype, mycoplasma and off-target files are listed as evidence attached or missing, always unassessed. Files are not interpreted to confirm the entered claims.
+
+The optional target-context field checks an exact matching spacer plus NGG PAM on the supplied target strand only. It does not map to a genome or check specificity. Other nucleases and multiple-guide designs are not represented by this first passport schema. An unknown editing fraction stays null; reported efficiency does not establish clonal genotype.
+
+Creating a passport appends a record to page memory rather than replacing an earlier clone record. Download each record before closing/reloading. In Auditor mode import a downloaded passport, choose an evidence entry and compare a file. This verifies one entry, not completeness of the entire bundle, cell identity, authorship or biological QC. Design and QC use the same `assured-ipsc-passport/1` versioned JSON envelope. It is not JSON-LD, an immutable ledger or a signed/externally anchored certificate. Public QR registry links, PDF CoAs and billing are not implemented.
