@@ -1,3 +1,4 @@
+import PassportPanel from './PassportPanel.jsx';
 import { useId, useState } from 'react';
 import { fields, screen, mint, verify } from './provenance.js';
 
@@ -52,5 +53,6 @@ export default function ProvenancePanel({ source }) {
     </fieldset>
     <p role="status" aria-live="polite">{busy ? 'Computing fingerprints…' : message}</p>
     <p>A hash proves equality to a supplied record, not authorship or data truth. Anyone can replace both a record and its hash. Keep a trusted original independently. Timestamps use your computer clock. No blockchain, digital signature, or external timestamp service is connected. Nothing is retained after leaving the page.</p>
+    <PassportPanel metadata={metadata} source={source} />
   </details>;
 }
