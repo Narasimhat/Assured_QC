@@ -1,6 +1,6 @@
 // Zero-configuration flow, as plain functions so that it is tested without a browser: files in, pairs and a design inferred, a pool of workers
 // run the samples, decisions come out. The React component only draws what these return.
-import { autoPair, parseSampleSheet, resolveSheet } from "./sheet.js";
+import { autoPair, parseSampleSheet, resolveSheet, directionOf, looksLikePool } from "./sheet.js";
 import { parseDesignReport } from "./designReport.js";
 import { planDesign } from "./batch.js";
 import { wellOf } from "./decision.js";
@@ -12,8 +12,50 @@ export function classifyFiles(names) {
   return out;
 }
 
-/** Pairs from a sheet (if there is one) or from the file names; every pair carries its confidence and the reason. */
-export function buildPairs({ traceNames, sheetText = "" }) {
+/** Pairs from an explicit control upload, a sheet (if there is one), or from the file names; every pair carries its confidence and the reason. */
+export function buildPairs({ traceNames, sheetText = "", explicitControls = [] }) {
+  const validControls = (explicitControls || []).filter((c) => traceNames.includes(c));
+  if (validControls.length > 0) {
+    const ctrlSet = new Set(validControls);
+    const editedTraces = traceNames.filter((n) => !ctrlSet.has(n));
+    if (!editedTraces.length) {
+      return {
+        pairs: [],
+        problems: ["Parental control trace loaded. Now add one or more edited clone .ab1 traces in Box 2 to pair and analyse."],
+        source: "explicit",
+      };
+    }
+    const stems = new Map();
+    editedTraces.forEach((name) => {
+      const { stem, direction } = directionOf(name);
+      const pool = looksLikePool(name);
+      const slotKey = direction ? stem : name.replace(/^.*[\\/]/, "").replace(/\.(ab1|abi|abif|scf)$/i, "");
+      if (!stems.has(slotKey)) stems.set(slotKey, { pool, files: [] });
+      const slot = stems.get(slotKey);
+      slot.pool = slot.pool || pool;
+      slot.files.push({ name, direction: direction || "F" });
+    });
+    const orderedControls = [...validControls].sort((a, b) => {
+      const da = directionOf(a).direction || "F";
+      const db = directionOf(b).direction || "F";
+      return da === db ? 0 : da === "F" ? -1 : 1;
+    });
+    const pairs = [];
+    for (const [sample, slot] of stems) {
+      const sortedEdited = slot.files
+        .sort((a, b) => (a.direction === b.direction ? 0 : a.direction === "F" ? -1 : 1))
+        .map((x) => x.name);
+      pairs.push({
+        sample,
+        edited: sortedEdited,
+        control: orderedControls.slice(0, 2),
+        type: slot.pool ? "pool" : "clone",
+        confidence: "explicit",
+        reason: "paired with uploaded Parental Control trace",
+      });
+    }
+    return { pairs, problems: [], source: "explicit" };
+  }
   if (sheetText.trim()) {
     const sheet = parseSampleSheet(sheetText); const resolved = resolveSheet(sheet.rows, traceNames);
     return { pairs: resolved.jobs.filter((j) => j.ok).map((j) => ({ sample: j.sample, edited: j.edited, control: j.control, type: j.type, confidence: "sheet", reason: "from the sample sheet", guides: j.guides, donor: j.donor, workflow: j.workflow })), problems: [...sheet.errors, ...resolved.problems], source: "sheet" };
@@ -38,12 +80,14 @@ export function readDesignForForm(text, { needsDonor = false, isJunction = false
   const d = readDesign(text);
   if (d.kind === "none") throw new Error("The file is empty.");
   if (d.kind === "spec") return { kind: "spec", spec: d.spec, label: d.label, note: "" };
-  const donor = d.donors.find((x) => x.recommended) || d.donors[0] || null;
+  const chosenDonors = d.donors.filter((x) => x.recommended);
+  const donorList = chosenDonors.length ? chosenDonors : d.donors;
+  const donor = donorList[0] || null;
   const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
   const notes = [`Read ${plural(d.guides.length, "guide")} and ${plural(d.donors.length, "donor")} from the design report "${d.label}"${d.designs.length > 1 ? ` (the file holds ${d.designs.length} designs; the first was used)` : ""}.`];
   if (needsDonor && !donor) notes.push("The report has no ssODN donor (a long knock-in donor is not read from a report): paste it below.");
   if (isJunction) notes.push("The junction check needs the .json design file; a report gives only guides and donors.");
-  return { kind: "report", guides: d.guides.join(", "), donor: donor ? donor.sequence : "", label: d.label, protein: d.protein || [], note: notes.join(" ") };
+  return { kind: "report", guides: d.guides.join(", "), donor: donorList.map((x) => x.sequence).join("\n"), donors: donorList, label: d.label, protein: d.protein || [], note: notes.join(" ") };
 }
 
 export function inferWorkflow(spec) {

@@ -6,7 +6,7 @@ import IceExport from "./IceExport.jsx";
 import { planTasks, readDesign } from "./quick.js";
 import { parseAbif } from "./abif.js";
 import { readDesignForForm } from "./quick.js";
-import { buildQcReportHtml, buildResultsCsv } from "./report.js";
+import { buildQcReportHtml, buildResultsCsv, buildTakeHomeMessage } from "./report.js";
 
 const FLOW_KEYS = Object.keys(WORKFLOWS);
 const FLOW_HINTS = {
@@ -101,10 +101,11 @@ export default function App() {
   const designLabel = outcome && outcome.ok ? `${outcome.design.gene || ""} ${outcome.design.label || ""}`.trim() : "";
   const stamp = new Date().toISOString().slice(0, 10);
 
+  const takeHome = useMemo(() => (outcome && outcome.ok ? buildTakeHomeMessage(workflow, outcome.results) : null), [outcome, workflow]);
+
   return (
     <div className="page">
       <h1>Assured QC</h1>
-      <p><a href="https://assured-traceedit.vercel.app/unified.html">Open Assured Analysis: one project setup, AssuredQC + TraceEdit results</a></p>
       <p className="muted">Sanger-trace QC for CRISPR knockouts, deletions, SNP corrections and knock-ins. Files are read and analysed in your browser; nothing is uploaded.</p>
 
       <QuickStart />
@@ -180,11 +181,40 @@ export default function App() {
       {outcome && outcome.ok && (
         <div className="card">
           <h2>Results</h2>
+          {takeHome && (
+            <div style={{
+              padding: "1rem 1.25rem",
+              borderRadius: "10px",
+              background: takeHome.status === "pass" ? "#ecfdf5" : takeHome.status === "warn" ? "#fffbeb" : "#fef2f2",
+              border: `1.5px solid ${takeHome.status === "pass" ? "#6ee7b7" : takeHome.status === "warn" ? "#fcd34d" : "#fca5a5"}`,
+              marginBottom: "1rem"
+            }}>
+              <div style={{
+                fontSize: "0.72rem",
+                fontWeight: 800,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                color: takeHome.status === "pass" ? "#065f46" : takeHome.status === "warn" ? "#92400e" : "#991b1b",
+                marginBottom: "0.3rem"
+              }}>
+                Final Take-Home Conclusion
+              </div>
+              <div style={{ fontSize: "1.05rem", fontWeight: 700, color: "#0f172a", marginBottom: "0.35rem" }}>
+                {takeHome.headline}
+              </div>
+              <div style={{ fontSize: "0.9rem", color: "#334155", lineHeight: 1.5, marginBottom: "0.5rem" }}>
+                {takeHome.summary}
+              </div>
+              <div style={{ fontSize: "0.82rem", color: "#475569", borderTop: "1px dashed rgba(0,0,0,0.12)", paddingTop: "0.45rem" }}>
+                <b>Recommended Next Step:</b> {takeHome.nextStep}
+              </div>
+            </div>
+          )}
           {iceRun && iceRun.tasks.length === outcome.results.length && <IceExport tasks={iceRun.tasks} results={outcome.results} getBytes={name => iceRun.stored.get(name)} />}
           {outcome.notes.map((n) => <p key={n} className="note">{n}</p>)}
-          <p>
-            <button type="button" className="link" onClick={() => download(`assured_qc_${stamp}.html`, buildQcReportHtml({ workflow, design: designLabel, results: outcome.results }), "text/html")}>Download report (HTML)</button>
-            <button type="button" className="link" onClick={() => download(`assured_qc_${stamp}.csv`, buildResultsCsv(workflow, outcome.results), "text/csv")}>Download table (CSV)</button>
+          <p style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", alignItems: "center" }}>
+            <button type="button" className="primary" onClick={() => download(`assured_qc_report_${stamp}.html`, buildQcReportHtml({ workflow, design: designLabel, results: outcome.results }), "text/html")}>Download Publication Report (HTML)</button>
+            <button type="button" className="link" onClick={() => download(`assured_qc_${stamp}.csv`, buildResultsCsv(workflow, outcome.results), "text/csv")}>Download Table (CSV)</button>
           </p>
           <table>
             <thead><tr><th>Sample</th><th>Result</th><th>Notes</th></tr></thead>
