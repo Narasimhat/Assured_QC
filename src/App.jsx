@@ -1,3 +1,4 @@
+import { NUCLEASES } from "./nucleases.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { WORKFLOWS, headline } from "./batch.js";
 import Detail from "./Detail.jsx";
@@ -33,6 +34,7 @@ export default function App() {
   const [designError, setDesignError] = useState("");
   const [designNote, setDesignNote] = useState("");
   const [designProtein, setDesignProtein] = useState([]);
+  const [nuclease, setNuclease] = useState("SpCas9");
   const [guides, setGuides] = useState("");
   const [donor, setDonor] = useState("");
   const [gene, setGene] = useState("");
@@ -59,6 +61,7 @@ export default function App() {
     try {
       const read = readDesignForForm(await file.text(), { needsDonor: flow.needsDonor, isJunction });
       setDesignName(file.name);
+      setNuclease(read.nuclease);
       if (read.kind === "spec") setDesignSpec(read.spec);
       else { setGuides(read.guides); if (read.donor) setDonor(read.donor); setDesignNote(read.note); setDesignProtein(read.protein || []); }
     } catch (error) { setDesignError(isReport ? `That design report could not be read: ${error.message}` : `That file is not valid JSON: ${error.message}`); }
@@ -75,7 +78,7 @@ export default function App() {
     setRunning(true); setOutcome(null); setPicked(0); setProgress({ done: 0, total: editedFiles.length, name: "" });
     try {
       const input = {
-        workflow, designSpec, manual: { guides, donor, gene: gene || "sample", protein: designProtein }, sampleType, bandsText,
+        workflow, designSpec, manual: { nuclease, guides, donor, gene: gene || "sample", protein: designProtein }, sampleType, bandsText,
         control: controlFile && !isJunction ? await readFile(controlFile) : null,
         samples: await Promise.all(editedFiles.map(readFile)),
       };
@@ -83,7 +86,7 @@ export default function App() {
       if (!isJunction) {
         const stored = new Map([input.control, ...input.samples].map(f => [f.name, f.buffer]));
         const planned = planTasks({ pairs: input.samples.map(f => ({ sample: f.name.replace(/\.ab1$/i, '').replace(/\.[^.]+$/, ''), control: [input.control.name], edited: [f.name], type: sampleType })),
-          getTrace: name => parseAbif(stored.get(name).slice(0), name), design: designSpec ? readDesign(JSON.stringify(designSpec)) : { kind: 'none' }, guides: guides.split(/[,;\s]+/).filter(Boolean), donor, workflow, sampleType });
+          getTrace: name => parseAbif(stored.get(name).slice(0), name), design: designSpec ? readDesign(JSON.stringify(designSpec)) : { kind: 'none' }, guides: guides.split(/[,;\s]+/).filter(Boolean), donor, nuclease, workflow, sampleType });
         setIceRun({ tasks: planned.tasks, stored });
       }
       worker.current = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
@@ -132,6 +135,8 @@ export default function App() {
         {!isJunction && !designSpec && (
           <>
             <p className="muted">Or enter the guide sequence(s) yourself (the sequence the control trace is searched for):</p>
+            <label className="field" htmlFor="nuclease">Enzyme</label>
+            <select id="nuclease" value={nuclease} onChange={e => setNuclease(e.target.value)}>{Object.entries(NUCLEASES).map(([key, value]) => <option key={key} value={key}>{value.label}</option>)}</select>
             <label className="field" htmlFor="guides">Guide sequence(s), comma separated (up to three)</label>
             <input id="guides" type="text" value={guides} onChange={(e) => setGuides(e.target.value)} placeholder="e.g. AACCAGTTGCAGGCGCCCCA" />
             {flow.needsDonor && (
