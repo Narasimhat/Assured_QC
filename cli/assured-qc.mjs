@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { specNuclease } from "../src/nucleases.js";
+import { specNuclease, nucleaseOrDefault } from "../src/nucleases.js";
 // Assured QC command line: a folder of .ab1 files (or a sample sheet) in; results, a report, a plate view and a provenance record out.
 //
 //   node cli/assured-qc.mjs run <folder> [--sheet sheet.csv] [--design design.json|report.html] [--guides G1,G2] [--donor SEQ]
@@ -121,6 +121,11 @@ export async function main(argv) {
   const cache = new Map(); const tasks = []; const nuclease = designSpec ? specNuclease(designSpec.qcSpec || designSpec) : args.nuclease || design.nuclease || "SpCas9";
   const baseEditor = args.editor ? { editor: args.editor, window: String(args.window || "4-8").split("-").map(Number), target: args.target ? Number(args.target) : null } : null;
   jobs.forEach((job, index) => {
+    if (design.nuclease && (job.nuclease || args.nuclease)) {
+      try {
+        if (nucleaseOrDefault(job.nuclease || args.nuclease) !== nucleaseOrDefault(design.nuclease)) { problems.push(`${job.sample}: enzyme conflicts with the imported design report.`); return; }
+      } catch (error) { problems.push(`${job.sample}: ${error.message}`); return; }
+    }
     const guides = job.guides?.length ? job.guides : design.guides; const donor = job.donor || design.donor;
     const controlPath = byName.get(job.control[0]); const key = JSON.stringify([controlPath, guides, donor, job.nuclease || nuclease]);
     if (!cache.has(key)) {

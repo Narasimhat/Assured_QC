@@ -8,7 +8,7 @@ import { planDesign, analyseSample } from '../src/batch.js';
 import { analysePair } from '../src/analyze.js';
 import { buildExpectedAlleles } from '../src/alleleLibrary.js';
 import { parseDesignReport } from '../src/designReport.js';
-import { readDesignForForm } from '../src/quick.js';
+import { readDesignForForm, readDesign, planTasks } from '../src/quick.js';
 import { planIceExport } from '../src/iceExport.js';
 import { buildQcReportHtml, buildResultsCsv } from '../src/report.js';
 const near = (actual, expected, tolerance = 5) => assert.ok(Math.abs(actual - expected) <= tolerance, `${actual} vs ${expected}`);
@@ -85,6 +85,14 @@ for (const nuclease of ['AsCas12a', 'LbCas12a', 'Mad7']) {
     const html = `<h1>Test</h1><h2>1. Gene Information</h2><table><tr><td>Enzyme</td><td>${nuclease} · config 1.1.0</td></tr></table><h2>2. gRNA Sequences</h2><table><tr><td>gRNA1</td><td>TTTA ${spacer}</td></tr></table>`;
     assert.equal(parseDesignReport(html)[0].guides[0].sequence, spacer);
     assert.equal(readDesignForForm(html).nuclease, nuclease);
+    const design = readDesign(html), samplePair = { sample: 'clone', control: ['wt'], edited: ['edited'] };
+    const getTrace = () => traceOf(reference);
+    const planned = planTasks({ pairs: [samplePair], getTrace, design });
+    assert.deepEqual(planned.problems, []);
+    assert.equal(planned.tasks[0].spec.design.nuclease, nuclease);
+    const conflicted = planTasks({ pairs: [{ ...samplePair, nuclease: 'SpCas9' }], getTrace, design });
+    assert.equal(conflicted.tasks.length, 0);
+    assert.match(conflicted.problems[0], /conflicts/);
   });
 }
 test('Mad7 YTTN PAM is distinct from the Cas12a TTTV PAM', () => {

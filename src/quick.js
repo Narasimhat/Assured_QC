@@ -3,7 +3,7 @@
 import { autoPair, parseSampleSheet, resolveSheet, directionOf, looksLikePool } from "./sheet.js";
 import { parseDesignReport } from "./designReport.js";
 import { planDesign } from "./batch.js";
-import { specNuclease } from "./nucleases.js";
+import { specNuclease, nucleaseOrDefault } from "./nucleases.js";
 import { wellOf } from "./decision.js";
 
 const ext = (name) => String(name).toLowerCase().match(/\.([a-z0-9]+)$/)?.[1] || "";
@@ -125,6 +125,11 @@ export function planTasks({ pairs, getTrace, design = { kind: "none" }, guides =
   const cache = new Map(); const tasks = []; const problems = [];
   const designGuides = design.kind === "report" ? design.guides : []; const designDonor = design.kind === "report" ? reportDonors(design.donors) : "";
   pairs.forEach((pair, index) => {
+    if (design.kind === "report" && pair.nuclease) {
+      try {
+        if (nucleaseOrDefault(pair.nuclease) !== nucleaseOrDefault(design.nuclease)) { problems.push(`${pair.sample}: sample-sheet enzyme conflicts with the imported design report.`); return; }
+      } catch (error) { problems.push(`${pair.sample}: ${error.message}`); return; }
+    }
     const g = pair.guides?.length ? pair.guides : (guides.length ? guides : designGuides); const d = pair.donor || donor || designDonor;
     const key = JSON.stringify([pair.control[0], g, d, design.kind === "spec" ? "spec" : "", pair.nuclease || (design.kind === "report" ? design.nuclease : null) || nuclease]);
     if (!cache.has(key)) {
