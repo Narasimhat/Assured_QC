@@ -82,7 +82,7 @@ for (const nuclease of ['AsCas12a', 'LbCas12a', 'Mad7']) {
     assert.equal(planIceExport([{ spec: snp, name: 'clone', nuclease: 'SpCas9' }]).rows.length, 0);
     assert.ok(buildResultsCsv('snp', [result]).includes(nuclease));
     assert.ok(buildQcReportHtml({ workflow: 'snp', results: [result] }).includes(nuclease));
-    const html = `<h1>Test</h1><h2>1. Gene Information</h2><table><tr><td>Enzyme</td><td>${nuclease} · config 1.1.0</td></tr></table><h2>2. gRNA Sequences</h2><table><tr><td>gRNA1</td><td>TTTA ${spacer}</td></tr></table>`;
+    const html = `<h1>Test</h1><h2>1. Gene Information</h2><table><tr><th>Gene</th><td>Test</td><th>Enzyme</th><td>${nuclease} · TTTV (5′ PAM) · config 1.1.0</td></tr></table><h2>2. gRNA Sequences</h2><table><tr><td>gRNA1</td><td>TTTA ${spacer}</td></tr></table>`;
     assert.equal(parseDesignReport(html)[0].guides[0].sequence, spacer);
     assert.equal(readDesignForForm(html).nuclease, nuclease);
     const design = readDesign(html), samplePair = { sample: 'clone', control: ['wt'], edited: ['edited'] };

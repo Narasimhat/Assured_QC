@@ -41,8 +41,9 @@ export function parseDesignReport(html) {
     const start = [...headings].reverse().find((n) => nodes.indexOf(n) < index); const end = headings.find((n) => nodes.indexOf(n) > index);
     const stop = end ? nodes.indexOf(end) : nodes.length; const nextSection = sections.find((n) => nodes.indexOf(n) > index); const guideEnd = nextSection ? nodes.indexOf(nextSection) : stop;
     const metaRows = nodes.slice(start ? nodes.indexOf(start) : 0, index).filter(n => n.tag === "tr");
-    const enzymeRow = metaRows.map(tr => tr.children.filter(n => n.tag === "td" || n.tag === "th")).find(cells => cells.length >= 2 && /^Enzyme$/i.test(text(cells[0])));
-    const declared = enzymeRow ? text(enzymeRow[1]).split(/[·;,(]/)[0].trim() : "";
+    const metaCells = metaRows.flatMap(tr => tr.children.filter(n => n.tag === "td" || n.tag === "th"));
+    const enzymeIndex = metaCells.findIndex((cell, i) => i + 1 < metaCells.length && /^Enzyme$/i.test(text(cell)));
+    const declared = enzymeIndex >= 0 ? text(metaCells[enzymeIndex + 1]).split(/[·;,(]/)[0].trim() : "";
     const nucleaseName = declared ? nucleaseOrDefault(declared) : "SpCas9";
     const nuclease = NUCLEASES[nucleaseName];
     const guides = [];
