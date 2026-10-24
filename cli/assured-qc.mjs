@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { specNuclease, nucleaseOrDefault } from "../src/nucleases.js";
 // Assured QC command line: a folder of .ab1 files (or a sample sheet) in; results, a report, a plate view and a provenance record out.
 //
 //   node cli/assured-qc.mjs run <folder> [--sheet sheet.csv] [--design design.json|report.html] [--guides G1,G2] [--donor SEQ]
@@ -105,7 +106,7 @@ export async function main(argv) {
   if (args.design) {
     const text = readFileSync(args.design, "utf8");
     if (/^\s*[{[]/.test(text)) designSpec = JSON.parse(text);
-    else { const designs = parseDesignReport(text); const chosen = designs[Number(args["design-index"] || 0)]; design = { guides: chosen.guides.map((g) => g.sequence), donor: reportDonors(chosen.donors), protein: chosen.protein }; console.log(`Design report: ${chosen.title}; ${chosen.guides.length} guide(s), ${chosen.donors.length} donor(s)${Array.isArray(design.donor) ? `; the ${design.donor.length} recommended donors are used together` : ""}.`); }
+    else { const designs = parseDesignReport(text); const chosen = designs[Number(args["design-index"] || 0)]; design = { guides: chosen.guides.map((g) => g.sequence), donor: reportDonors(chosen.donors), protein: chosen.protein, nuclease: chosen.nuclease }; console.log(`Design report: ${chosen.title}; ${chosen.guides.length} guide(s), ${chosen.donors.length} donor(s)${Array.isArray(design.donor) ? `; the ${design.donor.length} recommended donors are used together` : ""}.`); }
   }
   // 3. one spec per distinct control + guides + donor (the trace is only read once per group)
   // the gene record, if given: each allele is translated and the knockout is judged on the protein (NMD, truncation, splice sites, in-frame changes)
@@ -117,9 +118,14 @@ export async function main(argv) {
     if (!existsSync(args.genbank)) { console.error(`Gene record not found: ${args.genbank}`); return 1; }
     genbank = readFileSync(args.genbank, "utf8");
   }
-  const cache = new Map(); const tasks = []; const nuclease = args.nuclease || "SpCas9";
+  const cache = new Map(); const tasks = []; const nuclease = designSpec ? specNuclease(designSpec.qcSpec || designSpec) : args.nuclease || design.nuclease || "SpCas9";
   const baseEditor = args.editor ? { editor: args.editor, window: String(args.window || "4-8").split("-").map(Number), target: args.target ? Number(args.target) : null } : null;
   jobs.forEach((job, index) => {
+    if (design.nuclease && (job.nuclease || args.nuclease)) {
+      try {
+        if (nucleaseOrDefault(job.nuclease || args.nuclease) !== nucleaseOrDefault(design.nuclease)) { problems.push(`${job.sample}: enzyme conflicts with the imported design report.`); return; }
+      } catch (error) { problems.push(`${job.sample}: ${error.message}`); return; }
+    }
     const guides = job.guides?.length ? job.guides : design.guides; const donor = job.donor || design.donor;
     const controlPath = byName.get(job.control[0]); const key = JSON.stringify([controlPath, guides, donor, job.nuclease || nuclease]);
     if (!cache.has(key)) {
@@ -130,7 +136,7 @@ export async function main(argv) {
     const plan = cache.get(key);
     const workflow = args.workflow && args.workflow !== "auto" ? args.workflow : baseEditor ? "base_edit" : job.workflow || (plan.spec && (plan.spec.donors || []).length ? ((plan.spec.donors[0].insertBp || 0) > 0 ? "tag_small" : "snp") : (plan.spec && plan.spec.guides.length > 1 ? "deletion" : "knockout"));
     if (plan.error) { problems.push(`${job.sample}: ${plan.error}`); return; }
-    tasks.push({ index, name: job.sample, spec: plan.spec, workflow, sampleType: args.type || job.type || "clone", controls: job.control.map((n) => byName.get(n)), edited: job.edited.map((n) => byName.get(n)), options: { library: {}, baseEdit: {}, codingInput: plan.codingInput || null }, decisionOptions: { goal: args.goal === "any" ? "any" : "homozygous" }, meta: { confidence: job.confidence, reason: job.reason, planNotes: plan.warnings || [] } });
+    tasks.push({ index, name: job.sample, nuclease: plan.spec.design?.nuclease || nuclease, spec: plan.spec, workflow, sampleType: args.type || job.type || "clone", controls: job.control.map((n) => byName.get(n)), edited: job.edited.map((n) => byName.get(n)), options: { library: {}, baseEdit: {}, codingInput: plan.codingInput || null }, decisionOptions: { goal: args.goal === "any" ? "any" : "homozygous" }, meta: { confidence: job.confidence, reason: job.reason, planNotes: plan.warnings || [] } });
   });
   if ((args.regions || args.epitope) && !tasks.some((t) => t.options.codingInput)) problems.push("--regions or --epitope were given but no gene record is available (use --genbank, or a design file with a coding block); they were ignored.");
   // 4. analysis on a pool of worker threads

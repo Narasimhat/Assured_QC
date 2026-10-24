@@ -1,3 +1,18 @@
+## 0.6.0 (2026-10-24)
+
+- Named AsCas12a, LbCas12a and Mad7 analysis in manual entry, JSON/HTML imports,
+  quick/classic workflows and CLI; preserve enzyme metadata in results and CSV.
+- Model the complete nominal 18–23 spacer-offset break span for small indels,
+  donor-associated SNP indels, paired deletions and adaptive larger-event search.
+- Set alignment/refinement and inference windows from both strand boundaries;
+  mirror cut/PAM coordinates for reverse reads and annotate both cuts in figures.
+- Keep the same donor/partial-conversion, genotype, decision and report pipeline.
+  Reject unknown/conflicting enzymes. Keep non-Cas9 cases out of the verified
+  Cas9-only ICE template. Existing Cas9 numerical regressions pass.
+- New enzyme paths are checked computationally on generated signals/AB1 files;
+  laboratory calibration, enzyme-specific performance and repair distributions
+  remain unvalidated. Engine freeze records for older releases do not cover 0.6.0.
+
 # Release notes
 
 ## Unreleased

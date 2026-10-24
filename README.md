@@ -35,7 +35,7 @@ node cli/assured-qc.mjs figure --control control.ab1 --edited edited.ab1 --desig
 
 It writes `results.csv`, `results.json`, `report.html`, `plate.html`, `resequence.csv` and `run.json` (input hashes, parameters, engine version). 399 simulated pairs take 44 s on 11 threads (about 32,000 pairs per hour).
 
-**Design file.** Export the design from the design app as a QC design file (JSON, schema `assured-qc-design/1`; see `docs/design-handoff.md`; needed for the reporter workflow), or type the guide sequence(s) and donor into the app. Other nucleases (SpCas9, SpCas9-NG, SaCas9, Cas12a, SpRY) are supported, and the cut can be inferred from the traces when no guide is given (simulation-validated only).
+**Design file.** Export the design from the design app as a QC design file (JSON, schema `assured-qc-design/1`; see `docs/design-handoff.md`; needed for the reporter workflow), or type the guide sequence(s) and donor into the app. Other nucleases (SpCas9, SpCas9-NG, SaCas9, AsCas12a, LbCas12a, Mad7, legacy Cas12a, SpRY) are supported, and the cut can be inferred from the traces when no guide is given (simulation-validated only).
 
 ## What it does with a trace
 
@@ -92,3 +92,31 @@ The analysis modules in `src/` are plain ES modules with no browser or Node depe
 ## Credits and licensing
 
 The engine is written from scratch for this project. Synthego ICE (https://github.com/synthego-open/ice, Conant et al., CRISPR J 2022) was run only as a reference to compare results; none of its code is included, and its example traces are not redistributed. The repository licence has not been set yet.
+
+## Cas12a and Mad7 edit analysis (0.6.0)
+
+Choose **AsCas12a**, **LbCas12a** or **Mad7** when entering spacer sequences, or
+import the enzyme-aware Design/Bench JSON or HTML report. The same control/clone
+upload, indel and donor analysis, clone decisions, figures, reports and CSV exports
+are available. Cas12a uses a 5′ TTTV PAM; Mad7 uses 5′ YTTN. Named enzymes use nominal
+target/non-target cuts at spacer offsets 23/18. Both strands and reverse reads are
+handled. The old generic Cas12a option retains its midpoint anchor for compatibility,
+but now models the whole predicted cut span.
+
+The expected-allele library includes indels within the staggered-break span,
+paired-guide deletion junctions spanning both strand boundaries, complete donor
+edits and partial conversion. Upstream alignment and readable-window checks use
+the earliest/latest strand cut, rather than aligning through an edit near the
+other boundary. Figures use the configured PAM side/length and show both cuts.
+Results record the enzyme, config version, analysis model and predicted boundaries.
+An unknown or conflicting enzyme is rejected rather than treated as Cas9.
+
+These paths have computational regression coverage on idealised signals and
+generated AB1 traces: wild type, heterozygous/homozygous indels, opposite-strand
+paired deletions, SNP repair/partial conversion, small-tag insertion and reverse
+reads. **No laboratory Cas12a/Mad7 calibration or reference-tool equivalence is
+claimed.** Nominal cuts can vary with enzyme, sequence and conditions; the 5% floor,
+intervals and clone decisions still need independent validation for these enzymes.
+Sanger limitations (copy number, allele dropout, long events, off-targets) remain.
+The verified ICE CSV template has no enzyme field; non-Cas9 cases are explicitly
+excluded from that exporter and require manual setup in a compatible tool.
